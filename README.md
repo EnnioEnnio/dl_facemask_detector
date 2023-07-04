@@ -9,9 +9,11 @@ We have used the Real-World-Masked-Face-Dataset
 ## Setup
 we recommend using conda for setting up the environment. 
 
-``` conda create -n <env_name> python=3.10```
-``` conda activate <env_name>```
-``` pip install -r requirements.txt```
+```shell
+conda create -n <env_name> python=3.10
+conda activate <env_name>
+pip install -r requirements.txt
+```
 
 ## Model
 placeholder
@@ -20,12 +22,16 @@ placeholder
 ### Evaluation
 To evaluate the model on the test data, run the following command:
 
-``` python eval_model.py --model_path <path_to_model> --data_path <path_to_test_data>```
+```shell 
+python eval_model.py --model_path <path_to_model> --data_path <path_to_test_data>
+```
 
 ### Classification
 To classify an image, run the following command:
 
-``` python run_model.py --model_path <path_to_model> --image_path <path_to_image>```
+```shell 
+python run_model.py --model_path <path_to_model> --image_path <path_to_image>
+```
 
 
 
