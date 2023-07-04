@@ -1,0 +1,10 @@
+torch>=1.13.0
+torchvision>=0.14.0
+imageio
+matplotlib
+configargparse
+tensorboard
+tqdm
+opencv-python
+numpy
+pandas
