@@ -16,10 +16,13 @@ pip install -r requirements.txt
 ```
 
 ## Model
-placeholder
+[Placeholder]
+
 
 ## Usage
 ### Evaluation
+[Placeholder]
+
 To evaluate the model on the test data, run the following command:
 
 ```shell 
@@ -27,6 +30,8 @@ python eval_model.py --model_path <path_to_model> --data_path <path_to_test_data
 ```
 
 ### Classification
+[Placeholder]
+
 To classify an image, run the following command:
 
 ```shell 
