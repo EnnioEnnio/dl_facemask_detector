@@ -4,17 +4,17 @@ import torch.nn as nn
 # Define the network architecture
 # This is a CNN used for classification with 2 classes.
 # The architecture is inspired by LeNet-5 (http://yann.lecun.com/exdb/lenet/)
-# The input is a 3-channel RGB image of size 224x224
+# The input is a 3-channel RGB image of size 256x256
 # The output is a 2-element vector with the probabilities of each class (mask or no mask)
 
 
 # Reshaping layer to transform the input from a 2D image to a 4D tensor
-class Reshape(torch.nn.Module):
+class Reshape(nn.Module):
     def forward(self, x):
         return x.view(-1, 3, 256, 256)
 
 
-class LeNetty(nn.Model):
+class LeNetty(nn.Module):
     """An Interpretation of the LeNet-5 model."""
 
     def __init__(self, lr=0.1, num_classes=2, momentum=0.9, weight_decay=5e-4, batch_size=128, epochs=200):

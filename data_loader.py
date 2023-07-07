@@ -6,6 +6,6 @@ It can handle tasks such as reading data from files,
 performing data augmentation, data normalization, 
 and creating data loaders for efficient batching of the data during training and evaluation.
 
-Oberservations:
+Obserservations:
 Images from the dataset are of different sizes.
 """
