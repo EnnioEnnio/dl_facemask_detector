@@ -165,3 +165,9 @@ cython_debug/
 # VSCode dependent files
 .vscode/
 
+.direnv/
+
+*.aux
+*.out
+# TODO: track before final submission
+*.pdf
