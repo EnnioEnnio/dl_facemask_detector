@@ -8,4 +8,4 @@ tqdm
 opencv-python
 numpy
 pandas
-PIL 
+Pillow
