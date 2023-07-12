@@ -107,13 +107,13 @@ if __name__ == "__main__":
         "--rotate",
         type=bool,
         action=argparse.BooleanOptionalAction,
-        help="save additional rotated copies of source images (default: True)",
+        help="save additional rotated copies of source images (default: False)",
     )
     parser.add_argument(
         "-p",
         "--padding",
         type=bool,
         action=argparse.BooleanOptionalAction,
-        help="apply 0-padding to images to retain correct aspect ratio when resizing",
+        help="apply 0-padding to images to retain aspect ratio when resizing (default: False)",
     )
     main(parser.parse_args())
