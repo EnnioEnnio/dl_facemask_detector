@@ -165,6 +165,8 @@ cython_debug/
 # VSCode dependent files
 .vscode/
 
+labels.ini
+
 .direnv/
 
 *.aux
