@@ -1,5 +1,6 @@
 """
 TODO: train_model.py
+NOTE: I feel that some methods could be moved to data_loader.py for better code organization
 
 This file is responsible for training your model using the training data. It
 typically includes the training loop, which iterates over the training dataset,
@@ -11,23 +12,56 @@ and performing early stopping if necessary.
 
 from architecture import LeNetty
 import torch
+import random
+import numpy as np
+import torch
+import os
+import configparser
+from PIL import Image
+
+
+def get_files_from_subfolders(folder_path):
+    file_paths = []
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            file_path = os.path.join(root, file)
+            file_paths.append(file_path)
+    print(file_paths)
 
 
 def make_training_set(batch_size):
     training_set = []
-    return torch.utils.data.DataLoader(
-        training_set, batch_size=batch_size, shuffle=True
-    )
+    labels = []
+    # Using Config for better control over paths on different machines
+    # see example_config.ini and rename file to labels.ini for this method to work
+    config = configparser.ConfigParser()
+    config.read("labels.ini")
+
+    unmasked_images_folder = config.get("Paths", "umasked_images_folder")
+    masked_images_folder = config.get("Paths", "masked_images_folder")
+
+    unmasked_image_files = get_files_from_subfolders(unmasked_images_folder)
+    masked_image_files = get_files_from_subfolders(masked_images_folder)
+
+    for i in range(batch_size):
+        if random.random() < 0.5:
+            image_path = random.choice(unmasked_image_files)
+            label = 0
+        else:
+            image_path = random.choice(masked_image_files)
+            label = 1
+
+        image = Image.open(image_path)
+        training_set.append(image)
+        labels.append(label)
+
+    training_set = np.array(training_set)
+    labels = np.array(labels)
+
+    return training_set, labels
 
 
-def train_model(
-    model,
-    epochs=200,
-    batch_size=128,
-    lr=0.1,
-    loss=torch.nn.BCELoss(),
-    optimizer=None,
-):
+def train_model(model, epochs=200, batch_size=128, lr=0.1, loss=torch.nn.BCELoss(), optimizer=None,):
     net = model
     optimizer = (
         torch.optim.RMSprop(net.parameters(), lr=lr)
