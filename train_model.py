@@ -1,7 +1,5 @@
 """
 TODO: train_model.py
-NOTE: I feel that some methods could be moved to data_loader.py for better code organization
-
 This file is responsible for training your model using the training data. It
 typically includes the training loop, which iterates over the training dataset,
 feeds the data through the model, computes the loss, performs backpropagation,
@@ -19,10 +17,12 @@ import os
 import configparser
 from PIL import Image
 
+# NOTE: I feel that this methods could be moved to data_loader.py for better code organization
+
 
 def get_files_from_subfolders(folder_path):
     file_paths = []
-    for root, dirs, files in os.walk(folder_path):
+    for root, _, files in os.walk(folder_path):
         for file in files:
             file_path = os.path.join(root, file)
             file_paths.append(file_path)
@@ -62,15 +62,18 @@ def make_training_set(batch_size):
 
 
 def train_model(model, epochs=200, batch_size=128, lr=0.1, loss=torch.nn.BCELoss(), optimizer=None,):
-    net = model
+    neural_net = model
     optimizer = (
-        torch.optim.RMSprop(net.parameters(), lr=lr)
+        torch.optim.RMSprop(neural_net.parameters(), lr=lr)
         if optimizer is None
-        else optimizer(net.parameters(), lr=lr)
+        else optimizer(neural_net.parameters(), lr=lr)
     )
     total_loss = 0.0
+    # NOTE: I'm not sure if this is the correct way to make a training set since it only happenes once
+    # I think this should happen in the training loop for Stochastic Gradient Descent. Not sure though.
     training_loader = make_training_set(batch_size)
 
+    # TODO: implement early stopping and checkpointing and monitoring using tqdm
     for epoch in range(epochs):
         print(f"[INFO] running epoch {epoch}")
         global inputs, labels
@@ -80,7 +83,7 @@ def train_model(model, epochs=200, batch_size=128, lr=0.1, loss=torch.nn.BCELoss
             inputs, labels = mini_batch
             optimizer.zero_grad()
             # forward pass
-            outputs = net(inputs)
+            outputs = neural_net(inputs)
             # compute loss for current batch and calculate gradients
             loss = loss(outputs, labels)
             print(f"[INFO] (epoch {epoch}) loss for batch {i}: {loss.item()}")
