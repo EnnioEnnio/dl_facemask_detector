@@ -5,7 +5,7 @@ import torch.nn as nn
 # This is a CNN used for classification with 2 classes.
 # The architecture is inspired by LeNet-5 (http://yann.lecun.com/exdb/lenet/)
 # The input is a 3-channel RGB image of size 256x256
-# The output is a 2-element vector with the probabilities of each class (mask or no mask)
+# The output is a 1-element vector with the probabilities of a person being masked 1 or not 0
 
 
 # Reshaping layer to transform the input from a 2D image to a 4D tensor
@@ -17,7 +17,7 @@ class Reshape(nn.Module):
 class LeNetty(nn.Module):
     """An Interpretation of the LeNet-5 model."""
 
-    def __init__(self, lr=0.1, num_classes=2, momentum=0.9, weight_decay=5e-4, batch_size=128, epochs=200):
+    def __init__(self, lr=0.1, num_classes=1, momentum=0.9, weight_decay=5e-4, batch_size=128, epochs=200):
         super(LeNetty, self).__init__()
 
         self.features = nn.Sequential(
@@ -46,7 +46,7 @@ class LeNetty(nn.Module):
             nn.Sigmoid(),
             nn.Linear(120, 84),
             nn.Sigmoid(),
-            nn.Linear(84, 2)
+            nn.Linear(84, 1)
         )
 
         def forward(x):
