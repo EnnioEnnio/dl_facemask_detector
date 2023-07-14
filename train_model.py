@@ -106,7 +106,7 @@ def train_model(model,
     for index_epoch in tqdm(range(epochs), desc="Training Progress", unit="epoch"):
         # TODO: implement out of bounds check if epoch is larger than dataset
         start_index = index_epoch * batch_size
-        end_index = start_index + index_epoch
+        end_index = start_index + batch_size
 
         # Prepare mini-batch data and labels
         mini_batch_data = training_set[start_index:end_index]
