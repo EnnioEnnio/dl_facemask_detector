@@ -6,6 +6,15 @@ A simple face mask detector using deep learning.
 We have used the Real-World-Masked-Face-Dataset
  from [here](https://github.com/X-zhangyang/Real-World-Masked-Face-Dataset) for training the model.
 
+To download the dataset, you can run `make dataset` (requires environment
+[setup](#setup))
+
+### Data Processing
+
+If you wish to manually preprocess the dataset, you can execute
+`./data_loader.py` as a standalone script. This will take care of normalizing
+image dimensions and introducing rotational variations to the dataset.
+
 ## Setup
 we recommend using conda for setting up the environment. 
 
@@ -25,7 +34,7 @@ pip install -r requirements.txt
 
 To evaluate the model on the test data, run the following command:
 
-```shell 
+```shell
 python eval_model.py --model_path <path_to_model> --data_path <path_to_test_data>
 ```
 
@@ -34,7 +43,7 @@ python eval_model.py --model_path <path_to_model> --data_path <path_to_test_data
 
 To classify an image, run the following command:
 
-```shell 
+```shell
 python run_model.py --model_path <path_to_model> --image_path <path_to_image>
 ```
 
