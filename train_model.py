@@ -10,78 +10,11 @@ and performing early stopping if necessary.
 
 from architecture import LeNetty
 import torch
-import random
 import numpy as np
-import torch
-import os
-import configparser
 from PIL import Image
 from tqdm import tqdm
-
-# NOTE: I feel that this methods could be moved to data_loader.py for better code organization
-
-
-def get_files_from_subfolders(folder_path: str):
-    file_paths = []
-    for root, _, files in os.walk(folder_path):
-        for file in files:
-            file_path = os.path.join(root, file)
-            file_paths.append(file_path)
-    print(file_paths)
-
-
-def extract_path_from_config(config_file: str):
-    config = configparser.ConfigParser()
-    config.read(config_file)
-
-    unmasked_images_folder = config.get("Paths", "umasked_images_folder")
-    masked_images_folder = config.get("Paths", "masked_images_folder")
-
-    return unmasked_images_folder, masked_images_folder
-
-
-def make_training_and_validation_set(dataset_size, validation_split):
-    """
-    Returns a training set and validation set with labels not taking 
-    the distribution between masked and unmasked images into account.
-    This is done in one method to ensure that the same images are not used in both sets
-    """
-    training_set = []
-    validation_set = []
-    training_labels = []
-    validation_labels = []
-
-    # Using Config for better control over paths on different machines
-    # see example_config.ini and rename file to labels.ini for this method to work
-    unmasked_images_folder, masked_images_folder = extract_path_from_config(
-        "labels.ini")
-
-    unmasked_image_files = get_files_from_subfolders(unmasked_images_folder)
-    masked_image_files = get_files_from_subfolders(masked_images_folder)
-
-    for i in range(dataset_size):
-        if random.random() < 0.5:
-            image_path = random.choice(unmasked_image_files)
-            label = 0  # 0 for unmasked
-        else:
-            image_path = random.choice(masked_image_files)
-            label = 1  # 1 for masked
-
-        image = Image.open(image_path)
-
-        if random.random() < validation_split:
-            validation_set.append(image)
-            validation_labels.append(label)
-        else:
-            training_set.append(image)
-            training_labels.append(label)
-
-    training_set = np.array(training_set)
-    training_labels = np.array(training_labels)
-    validation_set = np.array(validation_set)
-    validation_labels = np.array(validation_labels)
-
-    return training_set, training_labels, validation_set, validation_labels
+from data_loader import make_training_and_validation_set
+import wandb
 
 
 def train_model(model,
@@ -89,22 +22,39 @@ def train_model(model,
                 training_labels=None,
                 epochs=200,
                 batch_size=128,
-                lr=0.1,
-                loss=torch.nn.BCELoss(),
+                learning_rate=0.1,
+                early_stopping_patience=10,
+                checkpointing=False,
+                loss_function=torch.nn.BCELoss(),
                 optimizer=torch.optim.RMSprop):
-    """INFO: training for 200 epochs with a batch_size of 128 will train on a total of 25,600 images"""
+
+    # initialize weights and biases logging (wandb)
+    wandb.init(project="dl_facemask_detection")
+    # set model specific hyperparameters (wandb)
+    wandb.config.architecture = model.__class__.__name__
+    wandb.config.learning_rate = learning_rate
+    wandb.config.dataset = "Real-World-Masked-Face-Dataset (RMFD)"
+    wandb.config.epoch = epochs
+    wandb.config.optimizer = optimizer.__name__
+    wandb.config.loss_function = loss_function.__class__.__name__
+
+    # check if training set and labels are provided
     if training_set is None or training_labels is None:
         print("[INFO] No training set and/or labels provided.")
 
+    # initialize model, optimizer and loss function
     neural_net = model
-    optimizer = optimizer(neural_net.parameters(), lr=lr)
+    optimizer = optimizer(neural_net.parameters(), lr=learning_rate)
     num_batches = len(training_set) // batch_size
     total_loss = 0.0
 
-    # Training Loop TODO: implement early stopping and checkpointing (
-    # don't know what the latter is but chatGPT suggested it ^^)
+    # Initialize Early Stopping
+    best_loss = np.inf
+    epochs_without_improvement = 0
+
+    # Training Loop
     for index_epoch in tqdm(range(epochs), desc="Training Progress", unit="epoch"):
-        # TODO: implement out of bounds check if epoch is larger than dataset
+        # TODO: implement out of bounds check if epoch is too large for dataset
         start_index = index_epoch * batch_size
         end_index = start_index + batch_size
 
@@ -127,7 +77,7 @@ def train_model(model,
             output = neural_net(image_data)
 
             # Calculate loss for the current image
-            image_loss = loss(output, image_label)
+            image_loss = loss_function(output, image_label)
 
             # Accumulate loss for the mini-batch
             batch_loss += image_loss
@@ -140,6 +90,21 @@ def train_model(model,
         # Print average batch loss
         batch_loss /= batch_size
         tqdm.write(f"Epoch {index_epoch+1}/{epochs}, Batch Loss: {batch_loss}")
+
+        # Early Stopping (and Checkpointing)
+        if batch_loss < best_loss:
+            best_loss = batch_loss
+            epochs_without_improvement = 0
+            if checkpointing:
+                torch.save(neural_net.state_dict(),
+                           f"checkpoint_{index_epoch}.pt")
+        else:
+            epochs_without_improvement += 1
+
+        if epochs_without_improvement > early_stopping_patience:
+            tqdm.write(
+                f"Early stopping after {index_epoch+1} epochs without improvement.")
+            break  # Stop training
 
         # Accumulate loss for the entire training set
         total_loss += batch_loss
@@ -157,5 +122,6 @@ if __name__ == "__main__":
     (training_set, training_labels, validation_set, validation_labels) = make_training_and_validation_set(
         dataset_size=25600, validation_split=0.2)
     model.train(True)
-    train_model(model, training_set=training_set,
-                training_labels=training_labels)
+    trained_model = train_model(model, training_set=training_set,
+                                training_labels=training_labels)
+    torch.save(trained_model.state_dict(), f"trained_model.pt")
