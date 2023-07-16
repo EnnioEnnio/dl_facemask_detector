@@ -117,6 +117,9 @@ def train_model(model,
     wandb.log({"total_loss": total_loss})
     tqdm.write(f"Total Loss: {total_loss}")
 
+    # Close weights and biases logging (needed for Jupyter Notebooks)
+    wandb.finish()
+
     # Return the trained model
     return neural_net
 
