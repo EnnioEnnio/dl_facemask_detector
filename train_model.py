@@ -1,13 +1,3 @@
-"""
-TODO: train_model.py
-This file is responsible for training your model using the training data. It
-typically includes the training loop, which iterates over the training dataset,
-feeds the data through the model, computes the loss, performs backpropagation,
-and updates the model parameters using an optimizer. It can also include code
-for monitoring and logging training progress, saving checkpoints of the model,
-and performing early stopping if necessary.
-"""
-
 from architecture import LeNetty
 import torch
 import numpy as np
@@ -29,18 +19,28 @@ def train_model(model,
                 optimizer=torch.optim.RMSprop):
 
     # initialize weights and biases logging (wandb)
-    wandb.init(project="dl_facemask_detection")
-    # set model specific hyperparameters (wandb)
-    wandb.config.architecture = model.__class__.__name__
-    wandb.config.learning_rate = learning_rate
-    wandb.config.dataset = "Real-World-Masked-Face-Dataset (RMFD)"
-    wandb.config.epoch = epochs
-    wandb.config.optimizer = optimizer.__name__
-    wandb.config.loss_function = loss_function.__class__.__name__
+    wandb.init(
+        project="dl_facemask_detection",
+        config={
+            "architecture": model.__class__.__name__,
+            "dataset": "Real-World-Masked-Face-Dataset (RMFD)",
+            "learning_rate": learning_rate,
+            "epoch": epochs,
+            "loss_function": loss_function.__class__.__name__,
+            "optimizer": optimizer.__name__,
+        }
+    )
 
     # check if training set and labels are provided
     if training_set is None or training_labels is None:
         print("[INFO] No training set and/or labels provided.")
+
+    # Check if number of epochs is too large for dataset for chosen batch size
+    possible_number_of_batches = len(training_set) // batch_size
+    if possible_number_of_batches > epochs:
+        print(
+            "[WARNING] Number of epochs is too large for dataset for chosen batch size. ")
+        print(f"Number of max. possible epochs: {possible_number_of_batches}")
 
     # initialize model, optimizer and loss function
     neural_net = model
@@ -54,7 +54,6 @@ def train_model(model,
 
     # Training Loop
     for index_epoch in tqdm(range(epochs), desc="Training Progress", unit="epoch"):
-        # TODO: implement out of bounds check if epoch is too large for dataset
         start_index = index_epoch * batch_size
         end_index = start_index + batch_size
 
@@ -79,6 +78,9 @@ def train_model(model,
             # Calculate loss for the current image
             image_loss = loss_function(output, image_label)
 
+            # Log image loss to weights and biases
+            wandb.log({"image_loss": image_loss})
+
             # Accumulate loss for the mini-batch
             batch_loss += image_loss
 
@@ -87,8 +89,9 @@ def train_model(model,
             image_loss.backward()
             optimizer.step()
 
-        # Print average batch loss
+        # Print and log average batch loss
         batch_loss /= batch_size
+        wandb.log({"batch_loss": batch_loss})
         tqdm.write(f"Epoch {index_epoch+1}/{epochs}, Batch Loss: {batch_loss}")
 
         # Early Stopping (and Checkpointing)
@@ -109,8 +112,9 @@ def train_model(model,
         # Accumulate loss for the entire training set
         total_loss += batch_loss
 
-    # Print total loss
+    # Print and log total loss
     total_loss /= num_batches
+    wandb.log({"total_loss": total_loss})
     tqdm.write(f"Total Loss: {total_loss}")
 
     # Return the trained model
@@ -119,9 +123,12 @@ def train_model(model,
 
 if __name__ == "__main__":
     model = LeNetty()
+    model.train(True)
+
     (training_set, training_labels, validation_set, validation_labels) = make_training_and_validation_set(
         dataset_size=25600, validation_split=0.2)
-    model.train(True)
+
     trained_model = train_model(model, training_set=training_set,
                                 training_labels=training_labels)
-    torch.save(trained_model.state_dict(), f"trained_model.pt")
+    torch.save(trained_model.state_dict(),
+               f"{model.__class__.__name__}_trained.pt")
