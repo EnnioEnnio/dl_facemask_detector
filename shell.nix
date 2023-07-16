@@ -23,5 +23,5 @@
   };
 in
   pkgs.mkShell {
-    buildInputs = [tex python];
+    buildInputs = [tex python pkgs.black];
   }

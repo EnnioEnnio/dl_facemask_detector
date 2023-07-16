@@ -9,4 +9,7 @@ report:
 clean:
 	$(MAKE) clean -C report
 
+format:
+	@black .
+
 .PHONY: dataset report clean

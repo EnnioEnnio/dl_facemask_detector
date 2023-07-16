@@ -15,6 +15,16 @@ If you wish to manually preprocess the dataset, you can execute
 `./data_loader.py` as a standalone script. This will take care of normalizing
 image dimensions and introducing rotational variations to the dataset.
 
+```shell
+# example for processing masked dataset
+python3 ./data_loader.py \
+    -i ../datasets-raw/AFDB_masked_face_dataset \
+    -o ./processed-masked --flatten \
+    --rotate \
+    -v \
+    --size 256 256
+```
+
 ## Setup
 we recommend using conda for setting up the environment. 
 

@@ -11,8 +11,10 @@ from PIL import Image, ImageOps
 from pathlib import Path
 import argparse
 import configparser
+import logging as log
 import numpy as np
 import os
+import sys
 import random
 
 
@@ -22,7 +24,6 @@ def get_files_from_subfolders(folder_path: str):
         for file in files:
             file_path = os.path.join(root, file)
             file_paths.append(file_path)
-    print(file_paths)
 
 
 def extract_path_from_config(config_file: str):
@@ -51,6 +52,8 @@ def make_training_and_validation_set(dataset_size, validation_split):
     unmasked_images_folder, masked_images_folder = extract_path_from_config(
         "labels.ini"
     )
+
+    print(unmasked_images_folder, masked_images_folder)
 
     unmasked_image_files = get_files_from_subfolders(unmasked_images_folder)
     masked_image_files = get_files_from_subfolders(masked_images_folder)
@@ -115,15 +118,38 @@ def resize_images(
                 image = image.rotate(rotation)
                 suffix = f"-rot-{rotation}{suffix}"
             output_path = os.path.join(output_dir, (f"{prefix}{suffix}"))
-            image.save(output_path)
+            log.debug(f"({image_dir}: Saving image to {output_path}")
+            save_safe(image, output_path)
 
 
-def process_dataset(input_dir, output_dir, target_size, rotate, padding):
+def save_safe(image, output_path):
+    if not os.path.exists(output_path):
+        image.save(output_path)
+        return
+    log.warning(f"File '{output_path}' already exists, saving with suffix")
+    suffix = Path(output_path).suffix
+    prefix = Path(output_path).with_suffix("")
+    i = 1
+    while True:
+        new_path = f"{prefix}-{i}{suffix}"
+        if not os.path.exists(new_path):
+            image.save(new_path)
+            return
+        i += 1
+
+
+def process_dataset(input_dir, output_dir, target_size, rotate, padding, flatten):
+    log.info(f"Processing dataset in '{input_dir}'")
     rotations = [90, 180, 270]
     for _, dir, _ in os.walk(input_dir):
         for d in dir:
+            log.debug(f"Processing directory '{d}'")
             in_dir = os.path.abspath(os.path.join(input_dir, d))
             out_dir = os.path.abspath(os.path.join(output_dir, d))
+            log.debug(f"Input dir: {in_dir}")
+            log.debug(f"Output dir: {out_dir}")
+            if flatten:
+                out_dir = os.path.abspath(output_dir)
             # base image transformation
             resize_images(in_dir, out_dir, target_size=target_size, padding=padding)
             # optional, additional rotational variations
@@ -139,19 +165,29 @@ def process_dataset(input_dir, output_dir, target_size, rotate, padding):
 
 
 def main(args):
+    log.basicConfig(
+        level=10 * (3 - max(0, min(args.verbose, 3))),
+        format="[%(levelname)s] %(message)s",
+    )
+    log.debug(f"Processing configuration: {args.__dict__}")
+    if not os.path.exists(args.input):
+        log.error(f"Input directory '{args.input}' does not exist")
+        sys.exit(1)
     process_dataset(
         args.input,
         args.output,
         tuple(args.size),
         args.rotate,
         args.padding,
+        args.flatten,
     )
+    log.info("Done")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-i", "--input", type=str, required=True, help="input directory"
+        "-i", "--input", type=str, required=True, help="input directory of raw dataset"
     )
     parser.add_argument(
         "-o",
@@ -159,6 +195,17 @@ if __name__ == "__main__":
         type=str,
         default="./out",
         help="output directory (default: ./out)",
+    )
+    parser.add_argument(
+        "-f",
+        "--flatten",
+        type=bool,
+        default=True,
+        action=argparse.BooleanOptionalAction,
+        help="flatten subdirectories of input directory",
+    )
+    parser.add_argument(
+        "-v", "--verbose", help="increase verbosity", action="count", default=0
     )
     parser.add_argument(
         "-s",
@@ -172,14 +219,16 @@ if __name__ == "__main__":
         "-r",
         "--rotate",
         type=bool,
+        default=True,
         action=argparse.BooleanOptionalAction,
-        help="save additional rotated copies of source images (default: False)",
+        help="save additional rotated copies of source images",
     )
     parser.add_argument(
         "-p",
         "--padding",
         type=bool,
+        default=False,
         action=argparse.BooleanOptionalAction,
-        help="apply 0-padding to images to retain aspect ratio when resizing (default: False)",
+        help="apply 0-padding to images to retain aspect ratio when resizing",
     )
     main(parser.parse_args())
