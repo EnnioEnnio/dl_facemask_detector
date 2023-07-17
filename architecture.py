@@ -17,7 +17,15 @@ class Reshape(nn.Module):
 class LeNetty(nn.Module):
     """An Interpretation of the LeNet-5 model."""
 
-    def __init__(self, lr=0.1, num_classes=1, momentum=0.9, weight_decay=5e-4, batch_size=128, epochs=200):
+    def __init__(
+        self,
+        lr=0.1,
+        num_classes=1,
+        momentum=0.9,
+        weight_decay=5e-4,
+        batch_size=128,
+        epochs=200,
+    ):
         super(LeNetty, self).__init__()
 
         self.features = nn.Sequential(
@@ -42,14 +50,15 @@ class LeNetty(nn.Module):
         self.classifier = nn.Sequential(
             nn.Flatten(),
             # output size: 32*7*7=1568
-            nn.Linear(32*7*7, 120),
+            nn.Linear(32 * 7 * 7, 120),
             nn.Sigmoid(),
             nn.Linear(120, 84),
             nn.Sigmoid(),
-            nn.Linear(84, 1)
+            nn.Linear(84, 1),
+            nn.Sigmoid(),
         )
 
-        def forward(x):
-            x = self.features(x)
-            x = self.classifier(x)
-            return x
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+        return x
