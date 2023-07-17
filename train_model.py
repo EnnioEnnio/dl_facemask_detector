@@ -1,22 +1,57 @@
+"""
+This file is responsible for training your model using the training data. It
+typically includes the training loop, which iterates over the training dataset,
+feeds the data through the model, computes the loss, performs backpropagation,
+and updates the model parameters using an optimizer. It can also include code
+for monitoring and logging training progress, saving checkpoints of the model,
+and performing early stopping if necessary.
+"""
+
 from architecture import LeNetty
-import torch
-import numpy as np
-from PIL import Image
+from torch.utils.data import DataLoader
+from torch.utils.data import random_split
+from torchvision import transforms
+from torchvision.datasets import ImageFolder
 from tqdm import tqdm
-from data_loader import make_training_and_validation_set
+import logging as log
+import numpy as np
+import os
+import torch
 import wandb
 
+log.basicConfig(level=log.INFO, format="[%(levelname)s] %(message)s")
 
-def train_model(model,
-                training_set=None,
-                training_labels=None,
-                epochs=200,
-                batch_size=128,
-                learning_rate=0.1,
-                early_stopping_patience=10,
-                checkpointing=False,
-                loss_function=torch.nn.BCELoss(),
-                optimizer=torch.optim.RMSprop):
+
+def train_model(
+    model,
+    training_set,
+    epochs=200,
+    batch_size=128,
+    learning_rate=0.1,
+    early_stopping_patience=10,
+    checkpointing=False,
+    loss_function=torch.nn.BCELoss,
+    optimizer=torch.optim.RMSprop,
+):
+    log.info(f"Number of training samples: {len(training_set)}")
+    log.info(f"Detected classes: {training_set.class_to_idx}")
+
+    # init dataloader from training dataset
+    dataloader = DataLoader(
+        training_set,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=4,
+        pin_memory=True,
+    )
+
+    # init model, optimizer and loss function
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    log.info(f"Using computation device: {device}\n")
+    log.debug(f"Model: {model}")
+    neural_net = model.to(device)
+    optimizer = optimizer(neural_net.parameters(), lr=learning_rate)
+    loss = loss_function()
 
     # initialize weights and biases logging (wandb)
     wandb.init(
@@ -26,112 +61,110 @@ def train_model(model,
             "dataset": "Real-World-Masked-Face-Dataset (RMFD)",
             "learning_rate": learning_rate,
             "epoch": epochs,
-            "loss_function": loss_function.__class__.__name__,
-            "optimizer": optimizer.__name__,
-        }
+            "loss_function": loss_function.__name__,
+            "optimizer": optimizer.__class__.__name__,
+        },
     )
 
-    # check if training set and labels are provided
-    if training_set is None or training_labels is None:
-        print("[INFO] No training set and/or labels provided.")
-
-    # Check if number of epochs is too large for dataset for chosen batch size
-    possible_number_of_batches = len(training_set) // batch_size
-    if possible_number_of_batches > epochs:
-        print(
-            "[WARNING] Number of epochs is too large for dataset for chosen batch size. ")
-        print(f"Number of max. possible epochs: {possible_number_of_batches}")
-
-    # initialize model, optimizer and loss function
-    neural_net = model
-    optimizer = optimizer(neural_net.parameters(), lr=learning_rate)
-    num_batches = len(training_set) // batch_size
-    total_loss = 0.0
-
-    # Initialize Early Stopping
+    # init counters for early stopping & logging
     best_loss = np.inf
     epochs_without_improvement = 0
+    total_loss = 0.0
+    num_batches = len(dataloader)
 
-    # Training Loop
-    for index_epoch in tqdm(range(epochs), desc="Training Progress", unit="epoch"):
-        start_index = index_epoch * batch_size
-        end_index = start_index + batch_size
+    # main training Loop
+    epochs = tqdm(
+        range(epochs),
+        desc="Training Progress",
+        unit="epochs",
+        total=epochs,
+    )
+    for epoch in epochs:
+        for batch, (input, label) in tqdm(
+            enumerate(dataloader),
+            desc="Current epoch progress",
+            unit="batches",
+            leave=False,
+            total=num_batches,
+        ):
+            batch_loss = 0.0
+            input = input.to(device)
+            label = label.to(device).float()
+            output = neural_net(input)
+            output = output.reshape(batch_size)
 
-        # Prepare mini-batch data and labels
-        mini_batch_data = training_set[start_index:end_index]
-        mini_batch_labels = training_labels[start_index:end_index]
+            log.debug(f"label: {label}")
+            log.debug(f"output: {output}")
 
-        # Convert mini-batch data and labels to PyTorch tensors
-        mini_batch_data = torch.tensor(mini_batch_data)
-        mini_batch_labels = torch.tensor(mini_batch_labels)
-
-        batch_loss = 0.0
-        # Batch Loop
-        for image_index in tqdm(range(batch_size), desc="Batch Progress", unit="image", leave=False):
-            # Forward pass for each image in the mini-batch
-            image_data = mini_batch_data[image_index]
-            image_label = mini_batch_labels[image_index]
-
-            # Forward pass for the current image
-            output = neural_net(image_data)
-
-            # Calculate loss for the current image
-            image_loss = loss_function(output, image_label)
-
-            # Log image loss to weights and biases
-            wandb.log({"image_loss": image_loss})
-
-            # Accumulate loss for the mini-batch
-            batch_loss += image_loss
-
-            # Backward pass and parameter update for the current image
+            image_loss = loss(output, label)
             optimizer.zero_grad()
             image_loss.backward()
             optimizer.step()
 
-        # Print and log average batch loss
-        batch_loss /= batch_size
-        wandb.log({"batch_loss": batch_loss})
-        tqdm.write(f"Epoch {index_epoch+1}/{epochs}, Batch Loss: {batch_loss}")
+            batch_loss += (image_loss / batch_size).item()
+            wandb.log({"batch_loss": batch_loss})
+            tqdm.write(
+                f"Epoch {epoch+1}/{len(epochs)}, Batch: {batch}, Batch Loss: {batch_loss}"
+            )
 
-        # Early Stopping (and Checkpointing)
-        if batch_loss < best_loss:
-            best_loss = batch_loss
-            epochs_without_improvement = 0
-            if checkpointing:
-                torch.save(neural_net.state_dict(),
-                           f"checkpoint_{index_epoch}.pt")
-        else:
-            epochs_without_improvement += 1
+            # Early Stopping (and Checkpointing)
+            if batch_loss < best_loss:
+                best_loss = batch_loss
+                epochs_without_improvement = 0
+                if checkpointing:
+                    tqdm.write(f"Epoch {epoch+1}/{epochs}, saving checkpoint")
+                    torch.save(
+                        trained_model.state_dict(),
+                        f"${model.__class__.__name__}-checkpoint-{epoch}.pt",
+                    )
+            else:
+                epochs_without_improvement += 1
+            total_loss += batch_loss
 
         if epochs_without_improvement > early_stopping_patience:
-            tqdm.write(
-                f"Early stopping after {index_epoch+1} epochs without improvement.")
-            break  # Stop training
+            tqdm.write(f"Early stopping after {epoch+1} epochs without improvement")
+            break
 
-        # Accumulate loss for the entire training set
-        total_loss += batch_loss
-
+    # Accumulate loss for the entire training set
     # Print and log total loss
     total_loss /= num_batches
     wandb.log({"total_loss": total_loss})
-    tqdm.write(f"Total Loss: {total_loss}")
-
+    tqdm.write(f"total Loss: {total_loss}")
     # Close weights and biases logging (needed for Jupyter Notebooks)
     wandb.finish()
-
     # Return the trained model
     return neural_net
 
 
 if __name__ == "__main__":
     model = LeNetty()
+
+    dataset_path = os.getenv("DATASET_PATH") or "./dataset"
+    dataset_path = os.path.abspath(dataset_path)
+    log.debug(f"Dataset path: {dataset_path}")
+
+    img_transform = transforms.Compose(
+        [
+            transforms.Resize((256, 256)),
+            transforms.RandomRotation(degrees=(90, 90)),
+            transforms.ToTensor(),
+        ]
+    )
+    dataset = ImageFolder(
+        root=dataset_path,
+        transform=img_transform,
+    )
+
+    validation_split = 0.2
+    log.debug(f"Validation split: {validation_split}")
+
+    training_dataset, validation_dataset = random_split(
+        dataset, [1 - validation_split, validation_split]
+    )
+
+    log.debug(f"Training dataset: {len(training_dataset)}")
+    log.debug(f"Validation dataset: {len(validation_dataset)}")
+
     model.train(True)
-
-    (training_set, training_labels, validation_set, validation_labels) = make_training_and_validation_set(
-        dataset_size=25600, validation_split=0.2)
-
-    trained_model = train_model(model, training_set=training_set,
-                                training_labels=training_labels)
-    torch.save(trained_model.state_dict(),
-               f"{model.__class__.__name__}_trained.pt")
+    trained_model = train_model(model, dataset)
+    torch.save(trained_model.state_dict(), f"{model.__class__.__name__}-trained.pt")
