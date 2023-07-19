@@ -8,9 +8,8 @@ and performing early stopping if necessary.
 """
 
 from architecture import LeNetty
-from torch.utils.data import DataLoader
-from torch.utils.data import random_split
-from torch.utils.data import WeightedRandomSampler, Subset
+from torch import Tensor
+from torch.utils.data import DataLoader, WeightedRandomSampler, random_split
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
 from tqdm import tqdm
@@ -21,15 +20,6 @@ import torch
 import wandb
 
 log.basicConfig(level=log.INFO, format="[%(levelname)s] %(message)s")
-
-
-def make_weighted_sampler(set):
-    dataset = set.dataset
-    labels = [dataset.targets[i] for i in set.indices]
-    class_counts = np.bincount(labels)
-    label_weights = 1.0 / class_counts
-    weights = label_weights[labels]
-    return WeightedRandomSampler(weights, len(weights))
 
 
 def train_model(
@@ -44,30 +34,44 @@ def train_model(
     loss_function=torch.nn.BCELoss,
     optimizer=torch.optim.RMSprop,
 ):
-    log.debug(f"Validation split: {validation_split}")
+    log.info(f"Validation split: {validation_split}")
 
     training_set, validation_set = random_split(
         data_set, [1 - validation_split, validation_split]
     )
 
-    log.debug(f"Training dataset: {len(training_set)} samples")
-    log.debug(f"Validation dataset: {len(validation_set)} samples")
+    log.info(f"Training dataset: {len(training_set)} samples")
+    log.info(f"Validation dataset: {len(validation_set)} samples")
     log.info(f"Detected classes: {data_set.class_to_idx}")
 
-    # sampler = make_weighted_sampler(set = set, labels = data_set.targets)
-    def make_dataloader_from_subset(set: Subset):
-        return DataLoader(
-            set,
-            batch_size=batch_size,
-            # shuffle=True,
-            num_workers=4,
-            pin_memory=True,
-            drop_last=True,
-            sampler=make_weighted_sampler(set),
+    # creates a balanced sampler for subsets of a torch Dataset object (ex ImageFolder)
+    def balanced_sampler(set):
+        indices = set.indices
+        class_labels = [dataset.targets[i] for i in indices]
+        class_sample_count = np.bincount(class_labels)
+        class_weights = 1.0 / class_sample_count
+        sample_weights = np.array([class_weights[t] for t in class_labels])
+        return WeightedRandomSampler(
+            torch.from_numpy(sample_weights), len(sample_weights)
         )
 
-    training_loader = make_dataloader_from_subset(set=training_set)
-    # validation_loader = make_dataloader(set=validation_set)
+    training_loader = DataLoader(
+        training_set,
+        batch_size=batch_size,
+        num_workers=4,
+        pin_memory=True,
+        drop_last=True,
+        sampler=balanced_sampler(training_set),
+    )
+
+    validation_loader = DataLoader(
+        training_set,
+        batch_size=batch_size,
+        num_workers=4,
+        pin_memory=True,
+        drop_last=True,
+        sampler=balanced_sampler(validation_set),
+    )
 
     # init model, cuda, optimizer, and loss function
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -96,34 +100,29 @@ def train_model(
         },
     )
 
-    # init counters for early stopping & logging
+    # init counters for early stopping, logging, etc.
     best_loss = np.inf
     epochs_without_improvement = 0
-    num_batches = len(training_loader)
     num_epochs = epochs
+    num_training_batches = len(training_loader)
+    num_validation_batches = len(validation_loader)
 
     # main training Loop
-    epochs = tqdm(
-        range(epochs),
-        desc="Training Progress",
-        unit="epochs",
-        total=epochs,
-    )
+    epochs = tqdm(range(epochs), desc="Epoch progress", unit="epochs", total=epochs)
     for epoch in epochs:
+        epoch_idx = epoch + 1
         epoch_loss = 0.0
-        for batch, (input, label) in tqdm(
+        training_batches = tqdm(
             enumerate(training_loader),
-            desc="Current epoch progress",
+            desc=f"Epoch {epoch_idx}: Training progress",
             unit="batches",
             leave=False,
-            total=num_batches,
-        ):
+            total=num_training_batches,
+        )
+        for batch, (input, label) in training_batches:
             input = input.to(device)
             label = label.to(device).float()
             output = neural_net(input).reshape(batch_size)
-
-            log.debug(f"label: {label}")
-            log.debug(f"output: {output}")
 
             # backprop
             current_batch_loss = loss(output, label)
@@ -132,31 +131,57 @@ def train_model(
             optimizer.step()
 
             # accumulate loss for the current epoch
-            epoch_loss += (current_batch_loss / batch_size).item()
+            epoch_loss += (current_batch_loss / num_training_batches).item()
 
             wandb.log({"batch_loss": current_batch_loss.item()})
             tqdm.write(
-                f"Epoch {epoch+1:03}/{num_epochs:03}, Batch: {batch:4}, Batch loss: {current_batch_loss:12f}, Running epoch loss: {epoch_loss:12f}"
+                f"Epoch {epoch_idx:03}/{num_epochs:03},"
+                f"Batch: {batch:4},"
+                f"Batch loss: {current_batch_loss:12f},"
+                f"Running epoch loss: {epoch_loss:12f},"
+                f"Split: {np.bincount(Tensor.cpu(label)) / batch_size}"
             )
 
+        # validation testing
+        tqdm.write(f"Epoch {epoch_idx:03}/{num_epochs:03}, performing validation")
+        validation_loss = 0.0
+        validation_batches = tqdm(
+            enumerate(validation_loader),
+            desc=f"Epoch {epoch_idx}: Validation progress",
+            unit="batches",
+            leave=False,
+            total=num_validation_batches,
+        )
+        for batch, (input, label) in validation_batches:
+            input = input.to(device)
+            label = label.to(device).float()
+            output = neural_net(input).reshape(batch_size)
+            current_batch_loss = loss(output, label)
+            validation_loss += (current_batch_loss / num_validation_batches).item()
+        tqdm.write(
+            f"Epoch {epoch_idx:03}/{num_epochs:03}, Validation loss: {validation_loss:12f}"
+        )
+        wandb.log({"validation_loss": validation_loss})
+
+        # end of current epoch, log current loss and perform checkpointing / early stopping if needed
         wandb.log({"loss": epoch_loss})
-        tqdm.write(f"Epoch {epoch+1:03}/{num_epochs:03}, Loss: {epoch_loss:12f}")
+        tqdm.write(f"Epoch {epoch_idx:03}/{num_epochs:03}, Loss: {epoch_loss:12f}")
 
         # Early Stopping (and Checkpointing)
         if epoch_loss < best_loss:
             best_loss = epoch_loss
             epochs_without_improvement = 0
             if checkpointing:
-                tqdm.write(f"Epoch {epoch+1:03}/{num_epochs:03}, saving checkpoint")
+                tqdm.write(f"Epoch {epoch_idx:03}/{num_epochs:03}, saving checkpoint")
                 torch.save(
                     trained_model.state_dict(),
-                    f"${model.__class__.__name__}-checkpoint-{epoch+1}.pt",
+                    f"${model.__class__.__name__}-checkpoint-{epoch_idx}.pt",
                 )
         else:
             epochs_without_improvement += 1
 
         if epochs_without_improvement > early_stopping_patience:
-            tqdm.write(f"Early stopping after {epoch+1} epochs without improvement")
+            tqdm.write(f"Early stopping after {epoch_idx} epochs without improvement")
             break
 
     # Close weights and biases logging (needed for Jupyter Notebooks)
@@ -170,7 +195,7 @@ if __name__ == "__main__":
 
     dataset_path = os.getenv("DATASET_PATH") or "./dataset"
     dataset_path = os.path.abspath(dataset_path)
-    log.debug(f"Dataset path: {dataset_path}")
+    log.info(f"Dataset path: {dataset_path}")
 
     img_transform = transforms.Compose(
         [
