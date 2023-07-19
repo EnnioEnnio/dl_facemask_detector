@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader, WeightedRandomSampler, random_split
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
 from tqdm import tqdm
+import configparser
 import logging as log
 import numpy as np
 import os
@@ -193,7 +194,11 @@ def train_model(
 if __name__ == "__main__":
     model = LeNetty()
 
-    dataset_path = os.getenv("DATASET_PATH") or "./dataset"
+    config = configparser.ConfigParser()
+    config.read("config.ini")
+    config_value = config.get("Paths", "dataset", fallback=None)
+    dataset_path = os.getenv("DATASET_PATH") or config_value or "./dataset"
+
     dataset_path = os.path.abspath(dataset_path)
     log.info(f"Dataset path: {dataset_path}")
 
