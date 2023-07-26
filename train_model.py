@@ -216,7 +216,7 @@ if __name__ == "__main__":
     config = Config()
     dataset_path = os.path.abspath(
         os.getenv("DATASET_PATH")
-        or config.get("Paths", "dataset")
+        or config.get("Paths", "training_set")
         or "./datasets/training_set"
     )
     log.info(f"Dataset path: {dataset_path}")

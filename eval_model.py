@@ -43,7 +43,7 @@ if __name__ == "__main__":
     # load path to testing set
     testset_path = os.path.abspath(
         os.getenv("TESTSET_PATH")
-        or config.get("Paths", "testset")
+        or config.get("Paths", "test_set")
         or "./datasets/testing_set"
     )
     log.info(f"Test-set path: {testset_path}")
