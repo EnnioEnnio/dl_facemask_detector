@@ -174,3 +174,4 @@ labels.ini
 # TODO: track before final submission
 *.pdf
 wandb
+*.pt
