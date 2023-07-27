@@ -191,7 +191,7 @@ def train_model(
             if checkpointing:
                 tqdm.write(f"Epoch {epoch_idx:03}/{num_epochs:03}, saving checkpoint")
                 torch.save(
-                    trained_model.state_dict(),
+                    neural_net.state_dict(),
                     f"${model.__class__.__name__}-checkpoint-{epoch_idx}.pt",
                 )
         else:
