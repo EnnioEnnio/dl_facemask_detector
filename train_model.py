@@ -7,7 +7,7 @@ for monitoring and logging training progress, saving checkpoints of the model,
 and performing early stopping if necessary.
 """
 
-from architecture import LeNetty
+from architecture import Model1
 from torch import Tensor
 import gc
 from torch.utils.data import DataLoader, WeightedRandomSampler, random_split
@@ -212,7 +212,7 @@ def train_model(
 
 
 if __name__ == "__main__":
-    model = LeNetty()
+    model = Model1()
     config = Config()
     dataset_path = os.path.abspath(
         os.getenv("DATASET_PATH")

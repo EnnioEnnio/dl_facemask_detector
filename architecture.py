@@ -7,11 +7,15 @@ import torch.nn as nn
 # The output is a 1-element vector with the probabilities of a person being masked 1 or not 0
 
 
-class LeNetty(nn.Module):
-    """An Interpretation of the LeNet-5 model."""
+class Model1(nn.Module):
+    """
+    A very loose adaptation of the LeNet-5 model. The primary differences to
+    the original model include an increase to the number of linear layers as
+    well as changes to the convolution dimensions.
+    """
 
     def __init__(self):
-        super(LeNetty, self).__init__()
+        super(Model1, self).__init__()
         self.conv1 = nn.Sequential(
             nn.Conv2d(3, 6, kernel_size=5, stride=1, padding=0),
             nn.BatchNorm2d(6),

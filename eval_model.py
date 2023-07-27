@@ -1,4 +1,4 @@
-from architecture import LeNetty
+from architecture import Model1
 from config import Config
 from torchvision import transforms
 from torch.utils.data import DataLoader
@@ -32,7 +32,7 @@ def eval_model(model, test_set):
 
 
 if __name__ == "__main__":
-    model = LeNetty()
+    model = Model1()
     config = Config()
 
     # load pre-trained model
