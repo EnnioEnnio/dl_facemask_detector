@@ -25,6 +25,8 @@ python3 ./data_loader.py \
     --size 256 256
 ```
 
+Be aware that you will have to use `--no-rotate` if you do not want the images to be rotated.
+
 ## Setup
 we recommend using conda for setting up the environment. 
 
@@ -36,6 +38,14 @@ pip install -r requirements.txt
 
 ## Model
 [Placeholder]
+
+## Training
+Rename the `example_config.ini` to `config.ini` and change the path to your preprocessed data. 
+In `train_model.py` select the architecture from `architecture.py` you want to use and run 
+
+```shell 
+python train_model.py
+```
 
 
 ## Usage

@@ -48,9 +48,9 @@ def make_training_and_validation_set(dataset_size, validation_split):
     validation_labels = []
 
     # Using Config for better control over paths on different machines
-    # see example_config.ini and rename file to labels.ini for this method to work
+    # see example_config.ini and rename file to config.ini for this method to work
     unmasked_images_folder, masked_images_folder = extract_path_from_config(
-        "labels.ini"
+        "config.ini"
     )
 
     print(unmasked_images_folder, masked_images_folder)

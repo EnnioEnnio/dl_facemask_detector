@@ -165,7 +165,7 @@ cython_debug/
 # VSCode dependent files
 .vscode/
 
-labels.ini
+config.ini
 
 .direnv/
 
@@ -173,3 +173,5 @@ labels.ini
 *.out
 # TODO: track before final submission
 *.pdf
+wandb
+*.pt

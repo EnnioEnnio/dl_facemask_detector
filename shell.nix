@@ -1,4 +1,4 @@
-{pkgs ? (import <nixpkgs> {})}: let
+{pkgs ? (import <nixpkgs> {config.allowUnfree = true;})}: let
   mach-nix =
     import (builtins.fetchGit {
       url = "https://github.com/DavHau/mach-nix";
@@ -10,18 +10,18 @@
     };
   python = mach-nix.mkPython {
     requirements = builtins.readFile ./requirements.txt;
-    # ignoreCollisions = true;
     _.nvidia-cufft-cu11.postInstall = "rm $out/lib/python*/site-packages/nvidia/__pycache__/__init__.cpython-310.pyc";
     _.nvidia-cuda-nvrtc-cu11.postInstall = "rm $out/lib/python*/site-packages/nvidia/__pycache__/__init__.cpython-310.pyc";
     _.nvidia-cudnn-cu11.postInstall = "rm $out/lib/python*/site-packages/nvidia/__pycache__/__init__.cpython-310.pyc";
   };
-  tex = pkgs.texlive.combine {
-    inherit
-      (pkgs.texlive)
-      scheme-full
-      ;
-  };
+  tex = pkgs.texlive.combine { inherit (pkgs.texlive) scheme-full; };
 in
   pkgs.mkShell {
-    buildInputs = [tex python pkgs.black];
+    buildInputs = with pkgs; [ tex python black ];
+    shellHook = ''
+      export CUDA_PATH=${pkgs.cudaPackages_11_7.cudatoolkit}
+      export CUDA_HOME=${pkgs.cudaPackages_11_7.cudatoolkit}
+      export LD_LIBRARY_PATH="${pkgs.cudaPackages_11_7.cudatoolkit}/lib"
+      export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${pkgs.cudaPackages_11_7.cudnn}/lib"
+    '';
   }
