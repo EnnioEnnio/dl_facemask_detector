@@ -15,9 +15,17 @@
     _.nvidia-cudnn-cu11.postInstall = "rm $out/lib/python*/site-packages/nvidia/__pycache__/__init__.cpython-310.pyc";
   };
   tex = pkgs.texlive.combine { inherit (pkgs.texlive) scheme-full; };
+  jupyenv = import (builtins.fetchGit {
+    url = "https://github.com/tweag/jupyenv";
+    rev = "3ad2c9512c9efd586cf63adde454e734a8ce049c";
+  });
+  inherit (jupyenv.lib.x86_64-linux) mkJupyterlabNew;
+  jupyter = mkJupyterlabNew {
+    kernel.python.minimal.enable = true;
+  };
 in
   pkgs.mkShell {
-    buildInputs = with pkgs; [ tex python black ];
+    buildInputs = with pkgs; [ tex python black jupyter ];
     shellHook = ''
       export CUDA_PATH=${pkgs.cudaPackages_11_7.cudatoolkit}
       export CUDA_HOME=${pkgs.cudaPackages_11_7.cudatoolkit}
