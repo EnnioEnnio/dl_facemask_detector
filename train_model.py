@@ -10,50 +10,19 @@ and performing early stopping if necessary.
 from architecture import Model1
 from torch import Tensor
 import gc
-from torch.utils.data import DataLoader, WeightedRandomSampler, random_split
-from torchvision import transforms
 from torchvision.datasets import ImageFolder
 from tqdm import tqdm
-import logging as log
 import numpy as np
 import os
 import torch
 import wandb
+from util import log, get_device, Config
 
-from config import Config
-
-log.basicConfig(level=log.INFO, format="[%(levelname)s] %(message)s")
-
-
-def get_device():
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    if device == "cuda":
-        log.info(
-            f"Using computation device: {torch.cuda.get_device_name()} * {torch.cuda.device_count()}"
-        )
-    else:
-        log.info("Using computation device: cpu")
-    return device
-
-
-def make_balanced_dataloader(set, batch_size):
-    # creates a balanced sampler for subsets of a torch Dataset object (ex ImageFolder)
-    indices = set.indices
-    class_labels = [dataset.targets[i] for i in indices]
-    class_sample_count = np.bincount(class_labels)
-    class_weights = 1.0 / class_sample_count
-    sample_weights = np.array([class_weights[t] for t in class_labels])
-    sampler = WeightedRandomSampler(
-        torch.from_numpy(sample_weights), len(sample_weights)
-    )
-    return DataLoader(
-        set,
-        batch_size=batch_size,
-        num_workers=4,
-        pin_memory=True,
-        drop_last=True,
-        sampler=sampler,
-    )
+from data_loader import (
+    make_balanced_dataloader,
+    common_transforms,
+    make_training_and_validation_sets,
+)
 
 
 def train_model(
@@ -70,15 +39,11 @@ def train_model(
     optimizer=torch.optim.SGD,
     save_model=True,
 ):
-    training_set, validation_set = random_split(
-        data_set, [1 - validation_split, validation_split]
+    training_set, validation_set = make_training_and_validation_sets(
+        data_set, validation_split
     )
     training_loader = make_balanced_dataloader(training_set, batch_size)
     validation_loader = make_balanced_dataloader(validation_set, batch_size)
-    log.info(f"Validation split: {validation_split}")
-    log.info(f"Training dataset: {len(training_set)} samples")
-    log.info(f"Validation dataset: {len(validation_set)} samples")
-    log.info(f"Detected classes: {data_set.class_to_idx}")
 
     # init model, cuda, optimizer, and loss function
     device = get_device()
@@ -221,16 +186,9 @@ if __name__ == "__main__":
     )
     log.info(f"Dataset path: {dataset_path}")
 
-    img_transform = transforms.Compose(
-        [
-            transforms.ToTensor(),
-            transforms.Resize((256, 256), antialias=True),
-            transforms.Normalize((0.5,), (0.5,)),
-        ]
-    )
     dataset = ImageFolder(
         root=dataset_path,
-        transform=img_transform,
+        transform=common_transforms,
     )
 
     model.train(True)
