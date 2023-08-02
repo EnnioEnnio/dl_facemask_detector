@@ -10,24 +10,18 @@ and performing early stopping if necessary.
 from architecture import Model1
 from torch import Tensor
 import gc
-from torchvision.datasets import ImageFolder
 from tqdm import tqdm
 import numpy as np
 import os
 import torch
 import wandb
+from data_loader import make_training_and_validation_loaders
 from util import log, get_device, Config
-
-from data_loader import (
-    make_balanced_dataloader,
-    common_transforms,
-    make_training_and_validation_sets,
-)
 
 
 def train_model(
     model,
-    data_set,
+    data_set_path,
     epochs=200,
     batch_size=128,
     learning_rate=0.01,
@@ -39,13 +33,15 @@ def train_model(
     optimizer=torch.optim.SGD,
     save_model=True,
 ):
-    training_set, validation_set = make_training_and_validation_sets(
-        data_set, validation_split
+    # init data loaders
+    training_loader, validation_loader = make_training_and_validation_loaders(
+        data_set_path,
+        batch_size,
+        validation_split,
+        balanced=True,
     )
-    training_loader = make_balanced_dataloader(training_set, batch_size)
-    validation_loader = make_balanced_dataloader(validation_set, batch_size)
 
-    # init model, cuda, optimizer, and loss function
+    # init model, cuda (if available), optimizer, and loss function
     device = get_device()
     log.debug(f"Model: {model}")
     neural_net = model.to(device)
@@ -73,6 +69,7 @@ def train_model(
     best_loss = np.inf
     epochs_without_improvement = 0
     num_epochs = epochs
+
     # main training Loop
     epochs = tqdm(range(epochs), desc="Epoch progress", unit="epochs", total=epochs)
     for epoch in epochs:
@@ -115,13 +112,13 @@ def train_model(
 
         # validation loop
         tqdm.write(f"Epoch {epoch+1:03}/{len(epochs):03}," f"Performing validation")
-        validation_batches = tqdm(
-            enumerate(validation_loader), total=len(validation_loader)
-        )
         with torch.no_grad():
             validation_loss = 0.0
             num_correct = 0
             num_samples = len(validation_loader) * batch_size
+            validation_batches = tqdm(
+                enumerate(validation_loader), total=len(validation_loader)
+            )
             for batch, (images, labels) in validation_batches:
                 labels = labels.to(device).float()
                 outputs = model(images.to(device)).squeeze()
@@ -186,10 +183,5 @@ if __name__ == "__main__":
     )
     log.info(f"Dataset path: {dataset_path}")
 
-    dataset = ImageFolder(
-        root=dataset_path,
-        transform=common_transforms,
-    )
-
     model.train(True)
-    train_model(model, dataset)
+    train_model(model, dataset_path)

@@ -4,7 +4,7 @@ import configparser
 
 
 log.basicConfig(
-    level=log.INFO, format="[%(levelname)s] [%(module) - %(funcName)] %(message)s"
+    level=log.INFO, format="[%(levelname)s] [%(module)s] %(message)s"
 )
 
 
