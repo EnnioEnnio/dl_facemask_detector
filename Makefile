@@ -1,10 +1,10 @@
 .POSIX:
 
 dataset:
-	@python3 scripts/download_dataset.py
+	@python3 ./util.py dataset
 
 model:
-	@python3 scripts/download_model.py
+	@python3 ./util.py model
 
 report:
 	$(MAKE) -C report
