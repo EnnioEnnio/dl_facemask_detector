@@ -90,12 +90,12 @@ if __name__ == "__main__":
     command = args.command
 
     if command == "model":
-        # last updated: 2021-09-15 (sk)
-        model_url = "https://drive.google.com/uc?id=1i_GS0o_2evh_K8Iivt0S-i089sE7P_ud"
+        # last updated: 2023-08-03 (sk)
+        model_url = "https://drive.google.com/uc?id=14Vk8ochj48OGOw6KAUaD4nEakPPcgIo4"
         download_model(args.url or model_url, args.out)
     elif command == "dataset":
-        # last updated: 2021-09-15 (sk)
-        dataset_url = "https://drive.google.com/uc?id=1UlOk6EtiaXTHylRUx2mySgvJX9ycoeBp"
+        # last updated: 2023-08-03 (sk)
+        dataset_url = "https://drive.google.com/uc?id=1ip04I_bX-PuIXnuzoEhAL_UZW1qTXu8y"
         download_dataset(args.url or dataset_url, args.out)
     else:
         parser.print_usage()

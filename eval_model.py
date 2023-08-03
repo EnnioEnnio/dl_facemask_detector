@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     # load pre-trained model
     model_path = os.path.abspath(
-        os.getenv("MODEL_PATH") or config.get("Paths", "model") or "./model-trained.pt"
+        os.getenv("MODEL_PATH") or config.get("Paths", "model") or "./trained.pt"
     )
     log.info(f"Model path: {model_path}")
 
