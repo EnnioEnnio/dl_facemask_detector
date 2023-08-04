@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 # Define the network architecture
@@ -9,7 +10,7 @@ import torch.nn as nn
 
 class Model1(nn.Module):
     """
-    A very loose adaptation of the LeNet-5 model. The primary differences to
+    A very loose adaptation of the LeNet-5 model. The primary differences to 
     the original model include an increase to the number of linear layers as
     well as changes to the convolution dimensions.
     """
@@ -49,3 +50,17 @@ class Model1(nn.Module):
         x = self.fc1(x)
         x = self.fc2(x)
         return self.fc3(x)
+
+
+def load_and_modify_resnet18(num_classes=1):
+    model = torch.hub.load('pytorch/vision:v0.10.0',
+                           'resnet18', pretrained=True)
+
+    # Freeze the weights of the feature extraction layers
+    for param in model.parameters():
+        param.requires_grad = False
+
+    # Replace the final fully connected layer for binary classification
+    in_features = model.fc.in_features
+    model.fc = nn.Linear(in_features, num_classes)
+    return model

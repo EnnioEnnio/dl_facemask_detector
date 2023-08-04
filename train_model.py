@@ -17,6 +17,7 @@ import torch
 import wandb
 from data_loader import make_training_and_validation_loaders
 from util import log, get_device, Config
+from architecture import load_and_modify_resnet18
 
 
 def train_model(
@@ -71,7 +72,8 @@ def train_model(
     num_epochs = epochs
 
     # main training Loop
-    epochs = tqdm(range(epochs), desc="Epoch progress", unit="epochs", total=epochs)
+    epochs = tqdm(range(epochs), desc="Epoch progress",
+                  unit="epochs", total=epochs)
     for epoch in epochs:
         epoch_idx = epoch + 1
         epoch_loss = 0.0
@@ -111,7 +113,8 @@ def train_model(
             gc.collect()
 
         # validation loop
-        tqdm.write(f"Epoch {epoch+1:03}/{len(epochs):03}," f"Performing validation")
+        tqdm.write(
+            f"Epoch {epoch+1:03}/{len(epochs):03}," f"Performing validation")
         with torch.no_grad():
             validation_loss = 0.0
             num_correct = 0
@@ -123,7 +126,8 @@ def train_model(
                 labels = labels.to(device).float()
                 outputs = model(images.to(device)).squeeze()
                 batch_vloss = loss(outputs, labels)
-                validation_loss += (batch_vloss / len(validation_loader)).item()
+                validation_loss += (batch_vloss /
+                                    len(validation_loader)).item()
 
                 predictions = torch.round(torch.sigmoid(outputs))
                 num_correct += torch.sum(predictions == labels).item()
@@ -144,14 +148,16 @@ def train_model(
 
         # end of current epoch, log current loss and perform checkpointing / early stopping if needed
         wandb.log({"loss": epoch_loss})
-        tqdm.write(f"Epoch {epoch_idx:03}/{num_epochs:03}, Loss: {epoch_loss:12f}")
+        tqdm.write(
+            f"Epoch {epoch_idx:03}/{num_epochs:03}, Loss: {epoch_loss:12f}")
 
         # Early Stopping (and Checkpointing)
         if epoch_loss < best_loss:
             best_loss = epoch_loss
             epochs_without_improvement = 0
             if checkpointing:
-                tqdm.write(f"Epoch {epoch_idx:03}/{num_epochs:03}, saving checkpoint")
+                tqdm.write(
+                    f"Epoch {epoch_idx:03}/{num_epochs:03}, saving checkpoint")
                 torch.save(
                     neural_net.state_dict(),
                     f"${model.__class__.__name__}-checkpoint-{epoch_idx}.pt",
@@ -160,7 +166,8 @@ def train_model(
             epochs_without_improvement += 1
 
         if epochs_without_improvement > early_stopping_patience:
-            tqdm.write(f"Early stopping after {epoch_idx} epochs without improvement")
+            tqdm.write(
+                f"Early stopping after {epoch_idx} epochs without improvement")
             break
 
     if save_model:
@@ -174,7 +181,7 @@ def train_model(
 
 
 if __name__ == "__main__":
-    model = Model1()
+    model = load_and_modify_resnet18()
     config = Config()
     dataset_path = os.path.abspath(
         os.getenv("DATASET_PATH")
