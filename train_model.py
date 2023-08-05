@@ -166,7 +166,7 @@ def train_model(
 
         if epochs_without_improvement > early_stopping_patience:
             tqdm.write(
-                f"Early stopping after {epoch_idx} epochs without improvement")
+                f"Early stopping after {epoch_idx} epochs ({early_stopping_patience} epochs without improvment)")
             break
 
     if save_model:
