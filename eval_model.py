@@ -5,7 +5,7 @@ import os
 import numpy
 from data_loader import make_evaluation_loader
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, precision_score, recall_score, accuracy_score
+from sklearn.metrics import confusion_matrix, precision_score, recall_score, accuracy_score, f1_score
 
 
 def eval_model(model, testset_path):
@@ -38,16 +38,12 @@ def eval_model(model, testset_path):
     # run model on test set, collect predictions and actual labels
     labels_true = []
     labels_predictions = []
-    num_correct = 0
     total = len(test_loader.dataset)
     for data, label in test_loader:
         actual = label.item()
         labels_true.append(actual.numpy())
         prediction = 1 if torch.sigmoid(model(data)).item() > 0.5 else 0
         labels_predictions.append(prediction)
-
-        if actual == prediction:
-            num_correct += 1
 
     labels_true = numpy.array(labels_true)
     labels_predictions = numpy.array(labels_predictions)
@@ -56,6 +52,7 @@ def eval_model(model, testset_path):
     precision = precision_score(labels_true, labels_predictions)
     recall = recall_score(labels_true, labels_predictions)
     accuracy = accuracy_score(labels_true, labels_predictions)
+    f1 = f1_score(labels_true, labels_predictions)
 
     # create confusion matrix
     conf_matrix = confusion_matrix(labels_true, labels_predictions)
@@ -63,11 +60,10 @@ def eval_model(model, testset_path):
     # plot confusion matrix
     plot_confusion_matrix(conf_matrix, title='Model Confusion Matrix')
     plt.savefig(f'{model.__class__.__name__}confusion_matrix.png')
-    # plt.show() # not sure if this is necessary
 
     # print metrics
     print(
-        f"Model: {model.__class__.__name__}  - Precision: {precision}, Recall: {recall}, Accuracy: {accuracy}")
+        f"Model: {model.__class__.__name__}  - Precision: {precision}, Recall: {recall}, Accuracy: {accuracy}, F1 Score: {f1}")
 
 
 if __name__ == "__main__":
