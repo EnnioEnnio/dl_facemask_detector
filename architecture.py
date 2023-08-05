@@ -61,7 +61,7 @@ class Reshape(nn.Module):
 class LeNet(nn.Module):
     """the LeNet-5 model. For Comparison only"""
 
-    def __init__(self, lr=0.1, num_classes=1, momentum=0.9, weight_decay=5e-4, batch_size=128, epochs=200):
+    def __init__(self):
         super(LeNet, self).__init__()
 
         self.features = nn.Sequential(
