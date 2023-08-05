@@ -1,4 +1,4 @@
-from architecture import Model1
+from architecture import Model1, load_and_modify_resnet18, LeNet
 from util import log, Config
 import torch
 import os
@@ -32,16 +32,13 @@ def eval_model(model, testset_path):
 
     test_loader = make_evaluation_loader(testset_path)
 
-    def get_class(idx):
-        return test_loader.dataset.classes[idx]
-
     # run model on test set, collect predictions and actual labels
     labels_true = []
     labels_predictions = []
     total = len(test_loader.dataset)
     for data, label in test_loader:
         actual = label.item()
-        labels_true.append(actual.numpy())
+        labels_true.append(actual)
         prediction = 1 if torch.sigmoid(model(data)).item() > 0.5 else 0
         labels_predictions.append(prediction)
 
