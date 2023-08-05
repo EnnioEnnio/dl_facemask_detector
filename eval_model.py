@@ -55,7 +55,8 @@ def eval_model(model, testset_path):
     conf_matrix = confusion_matrix(labels_true, labels_predictions)
 
     # plot confusion matrix
-    plot_confusion_matrix(conf_matrix, title='Model Confusion Matrix')
+    plot_confusion_matrix(
+        conf_matrix, title=f'{model.__class__.__name__} Confusion Matrix')
     plt.savefig(f'{model.__class__.__name__}_confusion_matrix.png')
 
     # print metrics
