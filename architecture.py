@@ -52,6 +52,53 @@ class Model1(nn.Module):
         return self.fc3(x)
 
 
+# Reshaping layer to transform the input from a 2D image to a 4D tensor
+class Reshape(nn.Module):
+    def forward(self, x):
+        return x.view(-1, 3, 256, 256)
+
+
+class LeNet(nn.Module):
+    """the LeNet-5 model. For Comparison only"""
+
+    def __init__(self, lr=0.1, num_classes=1, momentum=0.9, weight_decay=5e-4, batch_size=128, epochs=200):
+        super(LeNet, self).__init__()
+
+        self.features = nn.Sequential(
+            Reshape(),
+            nn.Conv2d(3, 6, kernel_size=5, padding=2),
+            # output size: 6x256x256
+            nn.Sigmoid(),
+            nn.AvgPool2d(kernel_size=2, stride=2),
+            # output size: 6x128x128
+            nn.Conv2d(6, 16, kernel_size=5, stride=2),
+            # output size: 16x62x62
+            nn.Sigmoid(),
+            nn.AvgPool2d(kernel_size=2, stride=2),
+            # output size: 16x31x31
+            nn.Conv2d(16, 32, kernel_size=5, stride=2),
+            # output size: 32x14x14
+            nn.Sigmoid(),
+            nn.AvgPool2d(kernel_size=2, stride=2)
+            # output size: 32x7x7
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Flatten(),
+            # output size: 32*7*7=1568
+            nn.Linear(32*7*7, 120),
+            nn.Sigmoid(),
+            nn.Linear(120, 84),
+            nn.Sigmoid(),
+            nn.Linear(84, 1)
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+        return x
+
+
 def load_and_modify_resnet18(num_classes=1):
     model = torch.hub.load('pytorch/vision:v0.10.0',
                            'resnet18', pretrained=True)
