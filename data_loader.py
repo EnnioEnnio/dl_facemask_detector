@@ -33,22 +33,24 @@ def make_training_and_validation_loaders(
         dataset_path, validation_split
     )
     if balanced:
-        training_loader = make_balanced_training_loader(training_set, batch_size)
-        validation_loader = make_balanced_training_loader(validation_set, batch_size)
+        training_loader = make_balanced_training_loader(
+            training_set, batch_size)
+        validation_loader = make_balanced_training_loader(
+            validation_set, batch_size)
     else:
         training_loader = make_training_loader(training_set, batch_size)
         validation_loader = make_training_loader(validation_set, batch_size)
     return training_loader, validation_loader
 
 
-def make_balanced_training_loader(set, batch_size):
+def make_balanced_training_loader(data_set, batch_size):
     """
     Creates and returns a dataloader with a balanced sampler for subsets of a
     torch Dataset object. This should be used if the dataset is significantly
     unbalanced.
     """
-    indices = set.indices
-    class_labels = [set.dataset.targets[i] for i in indices]
+    indices = data_set.indices
+    class_labels = [data_set.dataset.targets[i] for i in indices]
     class_sample_count = np.bincount(class_labels)
     class_weights = 1.0 / class_sample_count
     sample_weights = np.array([class_weights[t] for t in class_labels])
@@ -56,7 +58,7 @@ def make_balanced_training_loader(set, batch_size):
         torch.from_numpy(sample_weights), len(sample_weights)
     )
     return DataLoader(
-        set,
+        data_set,
         batch_size=batch_size,
         num_workers=4,
         pin_memory=True,
@@ -65,13 +67,13 @@ def make_balanced_training_loader(set, batch_size):
     )
 
 
-def make_training_loader(set, batch_size):
+def make_training_loader(data_set, batch_size):
     """
     Creates and returns a standard dataloader for use in model training. This
     can be used if the dataset is sufficiently balanced.
     """
     return DataLoader(
-        set,
+        data_set,
         batch_size=batch_size,
         num_workers=4,
         pin_memory=True,
@@ -85,7 +87,8 @@ def make_evaluation_loader(testset_path):
     Creates and returns a dataloader from a testset path for for use in model
     evaluation.
     """
-    testset = ImageFolder(root=testset_path, transform=make_common_image_transforms())
+    testset = ImageFolder(
+        root=testset_path, transform=make_common_image_transforms())
     log.info(f"Testset: {len(testset)} samples detected")
     log.info(f"Testset: detected classes: {testset.class_to_idx}")
     return DataLoader(testset, shuffle=True)
