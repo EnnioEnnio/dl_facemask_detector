@@ -11,3 +11,5 @@ pandas
 Pillow
 wandb
 gdown==4.6.0
+scipy
+scikit-learn
