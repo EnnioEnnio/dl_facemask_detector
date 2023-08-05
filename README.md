@@ -139,7 +139,14 @@ MODEL=$(pwd)/model.pt TESTSET_PATH=$(pwd)/dataset/test python3 eval_model.py
 <!-- ```shell -->
 <!-- MODEL=$(pwd)/model.pt python3 eval_model.py single --in=/path/to/my/image.png -->
 <!-- ``` -->
+## Running on Images
 
+It is possible to classify individual images with our model. Make sure you have completed all the steps in the [setup](#setup) section, including the specification of the path to the trained model.
+
+run the following command to classify an image:
+```shell
+python run_model.py --image=path/to/image
+```
 ## Report
 
 We have summarized our findings in a project report. You can view the rendered
