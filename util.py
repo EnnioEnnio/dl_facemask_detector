@@ -9,7 +9,8 @@ import sys
 import tempfile
 import zipfile
 
-log.basicConfig(level=log.INFO, format="[%(levelname)s] [%(module)s] %(message)s")
+log.basicConfig(
+    level=log.INFO, format="[%(levelname)s] [%(module)s] %(message)s")
 
 # last updated: 2023-08-03 (sk)
 model_url = "https://drive.google.com/uc?id=14Vk8ochj48OGOw6KAUaD4nEakPPcgIo4"
@@ -23,7 +24,8 @@ def get_device():
     """
     device = "cuda" if is_available() else "cpu"
     if device == "cuda":
-        log.info(f"Using computation device: {get_device_name()} * {device_count()}")
+        log.info(
+            f"Using computation device: {get_device_name()} * {device_count()}")
     else:
         log.info("Using computation device: cpu")
     return device
@@ -49,7 +51,7 @@ def download_model(url, out_path=None):
     out = out_path or os.getenv("OUT") or "./model.pt"
     out = os.path.abspath(out)
     if os.path.exists(out):
-        log.warn("model already exists, overwriting")
+        log.warning("model already exists, overwriting")
     log.info(f"downloading model to {out}")
     gdown.download(url, out, quiet=False)
 
@@ -67,7 +69,7 @@ def download_dataset(url, out_path=None):
         with zipfile.ZipFile(tmp_out, "r") as zip_ref:
             out = os.path.abspath(out_path or os.getenv("OUT") or "./dataset")
             if os.path.exists(out):
-                log.warn(f"path {out} already exists, overwriting")
+                log.warning(f"path {out} already exists, overwriting")
                 shutil.rmtree(out, ignore_errors=True)
             log.info(f"extracting dataset to {out}")
             zip_ref.extractall(out)
