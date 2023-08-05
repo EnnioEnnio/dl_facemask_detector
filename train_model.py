@@ -10,55 +10,18 @@ and performing early stopping if necessary.
 from architecture import Model1
 from torch import Tensor
 import gc
-from torch.utils.data import DataLoader, WeightedRandomSampler, random_split
-from torchvision import transforms
-from torchvision.datasets import ImageFolder
 from tqdm import tqdm
-import logging as log
 import numpy as np
 import os
 import torch
 import wandb
-
-from config import Config
-
-log.basicConfig(level=log.INFO, format="[%(levelname)s] %(message)s")
-
-
-def get_device():
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    if device == "cuda":
-        log.info(
-            f"Using computation device: {torch.cuda.get_device_name()} * {torch.cuda.device_count()}"
-        )
-    else:
-        log.info("Using computation device: cpu")
-    return device
-
-
-def make_balanced_dataloader(set, batch_size):
-    # creates a balanced sampler for subsets of a torch Dataset object (ex ImageFolder)
-    indices = set.indices
-    class_labels = [dataset.targets[i] for i in indices]
-    class_sample_count = np.bincount(class_labels)
-    class_weights = 1.0 / class_sample_count
-    sample_weights = np.array([class_weights[t] for t in class_labels])
-    sampler = WeightedRandomSampler(
-        torch.from_numpy(sample_weights), len(sample_weights)
-    )
-    return DataLoader(
-        set,
-        batch_size=batch_size,
-        num_workers=4,
-        pin_memory=True,
-        drop_last=True,
-        sampler=sampler,
-    )
+from data_loader import make_training_and_validation_loaders
+from util import log, get_device, Config
 
 
 def train_model(
     model,
-    data_set,
+    data_set_path,
     epochs=200,
     batch_size=128,
     learning_rate=0.01,
@@ -70,17 +33,15 @@ def train_model(
     optimizer=torch.optim.SGD,
     save_model=True,
 ):
-    training_set, validation_set = random_split(
-        data_set, [1 - validation_split, validation_split]
+    # init data loaders
+    training_loader, validation_loader = make_training_and_validation_loaders(
+        data_set_path,
+        batch_size,
+        validation_split,
+        balanced=True,
     )
-    training_loader = make_balanced_dataloader(training_set, batch_size)
-    validation_loader = make_balanced_dataloader(validation_set, batch_size)
-    log.info(f"Validation split: {validation_split}")
-    log.info(f"Training dataset: {len(training_set)} samples")
-    log.info(f"Validation dataset: {len(validation_set)} samples")
-    log.info(f"Detected classes: {data_set.class_to_idx}")
 
-    # init model, cuda, optimizer, and loss function
+    # init model, cuda (if available), optimizer, and loss function
     device = get_device()
     log.debug(f"Model: {model}")
     neural_net = model.to(device)
@@ -108,6 +69,7 @@ def train_model(
     best_loss = np.inf
     epochs_without_improvement = 0
     num_epochs = epochs
+
     # main training Loop
     epochs = tqdm(range(epochs), desc="Epoch progress", unit="epochs", total=epochs)
     for epoch in epochs:
@@ -150,13 +112,13 @@ def train_model(
 
         # validation loop
         tqdm.write(f"Epoch {epoch+1:03}/{len(epochs):03}," f"Performing validation")
-        validation_batches = tqdm(
-            enumerate(validation_loader), total=len(validation_loader)
-        )
         with torch.no_grad():
             validation_loss = 0.0
             num_correct = 0
             num_samples = len(validation_loader) * batch_size
+            validation_batches = tqdm(
+                enumerate(validation_loader), total=len(validation_loader)
+            )
             for batch, (images, labels) in validation_batches:
                 labels = labels.to(device).float()
                 outputs = model(images.to(device)).squeeze()
@@ -221,17 +183,5 @@ if __name__ == "__main__":
     )
     log.info(f"Dataset path: {dataset_path}")
 
-    img_transform = transforms.Compose(
-        [
-            transforms.ToTensor(),
-            transforms.Resize((256, 256), antialias=True),
-            transforms.Normalize((0.5,), (0.5,)),
-        ]
-    )
-    dataset = ImageFolder(
-        root=dataset_path,
-        transform=img_transform,
-    )
-
     model.train(True)
-    train_model(model, dataset)
+    train_model(model, dataset_path)

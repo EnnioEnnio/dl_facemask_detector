@@ -1,234 +1,108 @@
-"""
-TODO: data_loader.py
-
-This file is typically responsible for loading and preprocessing your data. It
-can handle tasks such as reading data from files, performing data augmentation,
-data normalization, and creating data loaders for efficient batching of the
-data during training and evaluation.
-"""
-
-from PIL import Image, ImageOps
-from pathlib import Path
-import argparse
-import configparser
-import logging as log
+from torch.utils.data import DataLoader, WeightedRandomSampler, random_split
+from torchvision import transforms
+from torchvision.datasets import ImageFolder
+from util import log
 import numpy as np
-import os
-import sys
-import random
+import torch
 
 
-def get_files_from_subfolders(folder_path: str):
-    file_paths = []
-    for root, _, files in os.walk(folder_path):
-        for file in files:
-            file_path = os.path.join(root, file)
-            file_paths.append(file_path)
-
-
-def extract_path_from_config(config_file: str):
-    config = configparser.ConfigParser()
-    config.read(config_file)
-
-    unmasked_images_folder = config.get("Paths", "umasked_images_folder")
-    masked_images_folder = config.get("Paths", "masked_images_folder")
-
-    return unmasked_images_folder, masked_images_folder
-
-
-def make_training_and_validation_set(dataset_size, validation_split):
+def make_training_and_validation_sets(dataset_path, validation_split=0.2):
     """
-    Returns a training set and validation set with labels not taking
-    the distribution between masked and unmasked images into account.
-    This is done in one method to ensure that the same images are not used in both sets
+    Constructs and returns training and validation subsets from a root dataset
+    path.
     """
-    training_set = []
-    validation_set = []
-    training_labels = []
-    validation_labels = []
+    assert 0 <= validation_split <= 1
 
-    # Using Config for better control over paths on different machines
-    # see example_config.ini and rename file to config.ini for this method to work
-    unmasked_images_folder, masked_images_folder = extract_path_from_config(
-        "config.ini"
+    dataset = ImageFolder(
+        root=dataset_path,
+        transform=make_common_image_transforms(),
     )
-
-    print(unmasked_images_folder, masked_images_folder)
-
-    unmasked_image_files = get_files_from_subfolders(unmasked_images_folder)
-    masked_image_files = get_files_from_subfolders(masked_images_folder)
-
-    for i in range(dataset_size):
-        if random.random() < 0.5:
-            image_path = random.choice(unmasked_image_files)
-            label = 0  # 0 for unmasked
-        else:
-            image_path = random.choice(masked_image_files)
-            label = 1  # 1 for masked
-
-        image = Image.open(image_path)
-
-        if random.random() < validation_split:
-            validation_set.append(image)
-            validation_labels.append(label)
-        else:
-            training_set.append(image)
-            training_labels.append(label)
-
-    training_set = np.array(training_set)
-    training_labels = np.array(training_labels)
-    validation_set = np.array(validation_set)
-    validation_labels = np.array(validation_labels)
-
-    return training_set, training_labels, validation_set, validation_labels
+    training_set, validation_set = random_split(
+        dataset, [1 - validation_split, validation_split]
+    )
+    log.info(f"Validation split: {validation_split}")
+    log.info(f"Training dataset: {len(training_set)} samples")
+    log.info(f"Validation dataset: {len(validation_set)} samples")
+    return training_set, validation_set
 
 
-def apply_zero_padding(image, target_size):
-    new_image = Image.new(image.mode, target_size, 0)
-    new_image.paste(image, (0, 0))
-    return new_image
-
-
-def resize_images(
-    image_dir, output_dir, target_size=(256, 256), rotation=0, padding=False
+def make_training_and_validation_loaders(
+    dataset_path, batch_size, validation_split=0.2, balanced=False
 ):
+    training_set, validation_set = make_training_and_validation_sets(
+        dataset_path, validation_split
+    )
+    if balanced:
+        training_loader = make_balanced_training_loader(training_set, batch_size)
+        validation_loader = make_balanced_training_loader(validation_set, batch_size)
+    else:
+        training_loader = make_training_loader(training_set, batch_size)
+        validation_loader = make_training_loader(validation_set, batch_size)
+    return training_loader, validation_loader
+
+
+def make_balanced_training_loader(set, batch_size):
     """
-    Resize images to target size and save them to output directory.
-    Currently only supports .jpg and .png images.
-    It's worth noting that resize will stretch and sometimes rotate Images.
+    Creates and returns a dataloader with a balanced sampler for subsets of a
+    torch Dataset object. This should be used if the dataset is significantly
+    unbalanced.
     """
-    os.makedirs(output_dir, exist_ok=True)
-
-    for image_name in os.listdir(image_dir):
-        if image_name.lower().endswith((".jpg", ".png")):
-            image_path = os.path.join(image_dir, image_name)
-            image = Image.open(image_path)
-            if padding:
-                # rescale to fit to target size (retains aspect ratio)
-                image = ImageOps.contain(
-                    image, target_size, method=Image.Resampling.LANCZOS
-                )
-                image = apply_zero_padding(image, target_size)
-            else:
-                image = image.resize(target_size)
-
-            prefix = Path(image_name).with_suffix("")
-            suffix = Path(image_name).suffix
-            if rotation:
-                image = image.rotate(rotation)
-                suffix = f"-rot-{rotation}{suffix}"
-            output_path = os.path.join(output_dir, (f"{prefix}{suffix}"))
-            log.debug(f"({image_dir}: Saving image to {output_path}")
-            save_safe(image, output_path)
-
-
-def save_safe(image, output_path):
-    if not os.path.exists(output_path):
-        image.save(output_path)
-        return
-    log.warning(f"File '{output_path}' already exists, saving with suffix")
-    suffix = Path(output_path).suffix
-    prefix = Path(output_path).with_suffix("")
-    i = 1
-    while True:
-        new_path = f"{prefix}-{i}{suffix}"
-        if not os.path.exists(new_path):
-            image.save(new_path)
-            return
-        i += 1
-
-
-def process_dataset(input_dir, output_dir, target_size, rotate, padding, flatten):
-    log.info(f"Processing dataset in '{input_dir}'")
-    rotations = [90, 180, 270]
-    for _, dir, _ in os.walk(input_dir):
-        for d in dir:
-            log.debug(f"Processing directory '{d}'")
-            in_dir = os.path.abspath(os.path.join(input_dir, d))
-            out_dir = os.path.abspath(os.path.join(output_dir, d))
-            log.debug(f"Input dir: {in_dir}")
-            log.debug(f"Output dir: {out_dir}")
-            if flatten:
-                out_dir = os.path.abspath(output_dir)
-            # base image transformation
-            resize_images(in_dir, out_dir, target_size=target_size, padding=padding)
-            # optional, additional rotational variations
-            if rotate:
-                for rotation in rotations:
-                    resize_images(
-                        in_dir,
-                        out_dir,
-                        target_size=target_size,
-                        rotation=rotation,
-                        padding=padding,
-                    )
-
-
-def main(args):
-    log.basicConfig(
-        level=10 * (3 - max(0, min(args.verbose, 3))),
-        format="[%(levelname)s] %(message)s",
+    indices = set.indices
+    class_labels = [set.dataset.targets[i] for i in indices]
+    class_sample_count = np.bincount(class_labels)
+    class_weights = 1.0 / class_sample_count
+    sample_weights = np.array([class_weights[t] for t in class_labels])
+    sampler = WeightedRandomSampler(
+        torch.from_numpy(sample_weights), len(sample_weights)
     )
-    log.debug(f"Processing configuration: {args.__dict__}")
-    if not os.path.exists(args.input):
-        log.error(f"Input directory '{args.input}' does not exist")
-        sys.exit(1)
-    process_dataset(
-        args.input,
-        args.output,
-        tuple(args.size),
-        args.rotate,
-        args.padding,
-        args.flatten,
+    return DataLoader(
+        set,
+        batch_size=batch_size,
+        num_workers=4,
+        pin_memory=True,
+        drop_last=True,
+        sampler=sampler,
     )
-    log.info("Done")
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-i", "--input", type=str, required=True, help="input directory of raw dataset"
+def make_training_loader(set, batch_size):
+    """
+    Creates and returns a standard dataloader for use in model training. This
+    can be used if the dataset is sufficiently balanced.
+    """
+    return DataLoader(
+        set,
+        batch_size=batch_size,
+        num_workers=4,
+        pin_memory=True,
+        shuffle=True,
+        drop_last=True,
     )
-    parser.add_argument(
-        "-o",
-        "--output",
-        type=str,
-        default="./out",
-        help="output directory (default: ./out)",
+
+
+def make_evaluation_loader(testset_path):
+    """
+    Creates and returns a dataloader from a testset path for for use in model
+    evaluation.
+    """
+    testset = ImageFolder(root=testset_path, transform=make_common_image_transforms())
+    log.info(f"Testset: {len(testset)} samples detected")
+    log.info(f"Testset: detected classes: {testset.class_to_idx}")
+    return DataLoader(testset, shuffle=True)
+
+
+def make_common_image_transforms(resize_shape=(256, 256), grayscale=True):
+    """
+    CommonImageTransforms provides common transformations used for ensuring
+    that input images conform to dimensions expected by the model.
+    """
+    transform_list = []
+    if grayscale:
+        transform_list.append(transforms.Grayscale(num_output_channels=3))
+    transform_list.extend(
+        [
+            transforms.ToTensor(),
+            transforms.Resize(resize_shape, antialias=True),
+        ]
     )
-    parser.add_argument(
-        "-f",
-        "--flatten",
-        type=bool,
-        default=True,
-        action=argparse.BooleanOptionalAction,
-        help="flatten subdirectories of input directory",
-    )
-    parser.add_argument(
-        "-v", "--verbose", help="increase verbosity", action="count", default=0
-    )
-    parser.add_argument(
-        "-s",
-        "--size",
-        nargs=2,
-        type=int,
-        default=[256, 256],
-        help="transformed image dimensions (w/h) (default: (256, 256))",
-    )
-    parser.add_argument(
-        "-r",
-        "--rotate",
-        type=bool,
-        default=True,
-        action=argparse.BooleanOptionalAction,
-        help="save additional rotated copies of source images",
-    )
-    parser.add_argument(
-        "-p",
-        "--padding",
-        type=bool,
-        default=False,
-        action=argparse.BooleanOptionalAction,
-        help="apply 0-padding to images to retain aspect ratio when resizing",
-    )
-    main(parser.parse_args())
+    return transforms.Compose(transform_list)

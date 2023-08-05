@@ -175,3 +175,8 @@ config.ini
 *.pdf
 wandb
 *.pt
+.jupyter/
+
+# default dataset and model paths for demo(s)
+model.pt
+dataset/
