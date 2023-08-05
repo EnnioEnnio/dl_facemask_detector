@@ -7,7 +7,7 @@ for monitoring and logging training progress, saving checkpoints of the model,
 and performing early stopping if necessary.
 """
 
-from architecture import Model1
+from architecture import Model1, load_and_modify_resnet18, LeNet
 from torch import Tensor
 import gc
 from tqdm import tqdm
@@ -17,7 +17,6 @@ import torch
 import wandb
 from data_loader import make_training_and_validation_loaders
 from util import log, get_device, Config
-from architecture import load_and_modify_resnet18
 
 
 def train_model(
@@ -44,7 +43,7 @@ def train_model(
 
     # init model, cuda (if available), optimizer, and loss function
     device = get_device()
-    log.debug(f"Model: {model}")
+    log.debug(f"Model: {model.__class__.__name__}")
     neural_net = model.to(device)
     optimizer = optimizer(
         neural_net.parameters(),
@@ -181,7 +180,7 @@ def train_model(
 
 
 if __name__ == "__main__":
-    model = load_and_modify_resnet18()
+    model = Model1()
     config = Config()
     dataset_path = os.path.abspath(
         os.getenv("DATASET_PATH")
