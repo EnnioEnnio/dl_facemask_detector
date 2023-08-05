@@ -64,7 +64,7 @@ def eval_model(model, testset_path):
 
 
 if __name__ == "__main__":
-    model = load_and_modify_resnet18()
+    model = Model1()
     config = Config()
 
     # load pre-trained model
