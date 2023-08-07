@@ -1,25 +1,26 @@
 from architecture import Model1
-from util import log, Config
+from util import log, Config, get_device
 import os
 import torch
-from torch.utils.data import DataLoader
-from torchvision import transforms
-from torchvision.datasets import ImageFolder
 import argparse
-from PIL import Image
 from data_loader import process_single_image
 
 
 def run_model(model, image_path: str):
     image = process_single_image(image_path)
+
+    # using device to run model on machines with & without GPU
+    device = get_device()
+    neural_net = model.to(device)
     print("masked" if torch.sigmoid(
-        model(image)).item() > 0.5 else "unmasked")
+        neural_net(image)).item() > 0.5 else "unmasked")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Predict masked/unmasked label from an image using a trained model as defined in the config.ini.")
-    parser.add_argument("--image", type=str, help="Path to the input image.")
+    parser.add_argument("--image", type=str,
+                        help="Path to the input image.", required=True)
     args = parser.parse_args()
 
     model = Model1()
