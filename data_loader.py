@@ -113,14 +113,9 @@ def make_common_image_transforms(resize_shape=(256, 256), grayscale=True):
 
 
 def process_single_image(image_path: str, resize_shape=(256, 256), grayscale=True):
-    # Load the image using PIL
     image = Image.open(image_path)
-
-    # Create the transformation
     transform = make_common_image_transforms(
         resize_shape=resize_shape, grayscale=grayscale)
 
-    # Apply the transformation to the image and add batch dimension
-    tensor_image = transform(image).unsqueeze(0)
-
-    return tensor_image
+    # normalize and add batch dimension
+    return transform(image).unsqueeze(0)
