@@ -26,7 +26,7 @@ def eval_model(model, testset_path):
                          ha="center", va="center",
                          color="white" if conf_matrix[i, j] > thresh else "black")
 
-        plt.tight_layout()
+        plt.tight_layout(pad=1.5)
         plt.ylabel('True label')
         plt.xlabel('Predicted label')
 
