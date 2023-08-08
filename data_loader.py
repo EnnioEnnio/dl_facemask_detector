@@ -4,6 +4,7 @@ from torchvision.datasets import ImageFolder
 from util import log
 import numpy as np
 import torch
+from PIL import Image
 
 
 def make_training_and_validation_sets(dataset_path, validation_split=0.2):
@@ -109,3 +110,12 @@ def make_common_image_transforms(resize_shape=(256, 256), grayscale=True):
         ]
     )
     return transforms.Compose(transform_list)
+
+
+def process_single_image(image_path: str, resize_shape=(256, 256), grayscale=True):
+    image = Image.open(image_path)
+    transform = make_common_image_transforms(
+        resize_shape=resize_shape, grayscale=grayscale)
+
+    # normalize and add batch dimension
+    return transform(image).unsqueeze(0)

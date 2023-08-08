@@ -14,7 +14,7 @@ def eval_model(model, testset_path):
         plt.imshow(conf_matrix, interpolation='nearest', cmap=plt.cm.Blues)
         plt.title(title)
         plt.colorbar()
-        classes = ['Masked', 'Unmasked']
+        classes = test_loader.dataset.classes
         tick_marks = numpy.arange(len(classes))
         plt.xticks(tick_marks, classes, rotation=45)
         plt.yticks(tick_marks, classes)
@@ -55,8 +55,9 @@ def eval_model(model, testset_path):
     conf_matrix = confusion_matrix(labels_true, labels_predictions)
 
     # plot confusion matrix
-    plot_confusion_matrix(conf_matrix, title='Model Confusion Matrix')
-    plt.savefig(f'{model.__class__.__name__}confusion_matrix.png')
+    plot_confusion_matrix(
+        conf_matrix, title=f'{model.__class__.__name__} Confusion Matrix')
+    plt.savefig(f'{model.__class__.__name__}_confusion_matrix.png')
 
     # print metrics
     print(
