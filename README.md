@@ -145,7 +145,7 @@ It is possible to classify individual images with our model. Make sure you have 
 
 run the following command to classify an image:
 ```shell
-python run_model.py --image=path/to/image
+MODEL=$(pwd)/model.pt python3 run_model.py --image=path/to/image
 ```
 ## Report
 
