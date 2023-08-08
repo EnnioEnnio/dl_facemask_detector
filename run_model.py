@@ -1,4 +1,4 @@
-from architecture import Model1
+from architecture import Model1, load_and_modify_resnet18
 from util import log, Config, get_device
 import os
 import torch
@@ -10,8 +10,8 @@ def run_model(model, image_path: str):
     image = process_single_image(image_path)
 
     # using device to run model on machines with & without GPU
-    device = get_device()
-    neural_net = model.to(device)
+    # device = get_device()
+    neural_net = model  # .to(device)
     print("masked" if torch.sigmoid(
         neural_net(image)).item() > 0.5 else "unmasked")
 
@@ -23,7 +23,7 @@ if __name__ == "__main__":
                         help="Path to the input image.", required=True)
     args = parser.parse_args()
 
-    model = Model1()
+    model = load_and_modify_resnet18()
     config = Config()
 
     # load pre-trained model
