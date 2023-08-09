@@ -1,11 +1,17 @@
-from architecture import Model1, load_and_modify_resnet18, LeNet
+from architecture import Model1
 from util import log, Config, get_device
 import torch
 import os
 import numpy
 from data_loader import make_evaluation_loader
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, precision_score, recall_score, accuracy_score, f1_score
+from sklearn.metrics import (
+    confusion_matrix,
+    precision_score,
+    recall_score,
+    accuracy_score,
+    f1_score,
+)
 
 
 def eval_model(model, testset_path):
@@ -15,7 +21,7 @@ def eval_model(model, testset_path):
     neural_net = model.to(device)
 
     def plot_confusion_matrix(conf_matrix, title):
-        plt.imshow(conf_matrix, interpolation='nearest', cmap=plt.cm.Blues)
+        plt.imshow(conf_matrix, interpolation="nearest", cmap=plt.cm.Blues)
         plt.title(title)
         plt.colorbar()
         classes = test_loader.dataset.classes
@@ -23,16 +29,21 @@ def eval_model(model, testset_path):
         plt.xticks(tick_marks, classes, rotation=45)
         plt.yticks(tick_marks, classes)
 
-        thresh = conf_matrix.max() / 2.
+        thresh = conf_matrix.max() / 2.0
         for i in range(conf_matrix.shape[0]):
             for j in range(conf_matrix.shape[1]):
-                plt.text(j, i, format(conf_matrix[i, j], 'd'),
-                         ha="center", va="center",
-                         color="white" if conf_matrix[i, j] > thresh else "black")
+                plt.text(
+                    j,
+                    i,
+                    format(conf_matrix[i, j], "d"),
+                    ha="center",
+                    va="center",
+                    color="white" if conf_matrix[i, j] > thresh else "black",
+                )
 
         plt.tight_layout(pad=1.5)
-        plt.ylabel('True label')
-        plt.xlabel('Predicted label')
+        plt.ylabel("True label")
+        plt.xlabel("Predicted label")
 
     test_loader = make_evaluation_loader(testset_path)
 
@@ -59,12 +70,14 @@ def eval_model(model, testset_path):
 
     # plot confusion matrix
     plot_confusion_matrix(
-        conf_matrix, title=f'{model.__class__.__name__} Confusion Matrix')
-    plt.savefig(f'{model.__class__.__name__}_confusion_matrix.png')
+        conf_matrix, title=f"{model.__class__.__name__} Confusion Matrix"
+    )
+    plt.savefig(f"{model.__class__.__name__}_confusion_matrix.png")
 
     # print metrics
     print(
-        f"Model: {model.__class__.__name__}  - Precision: {precision}, Recall: {recall}, Accuracy: {accuracy}, F1 Score: {f1}")
+        f"Model: {model.__class__.__name__}  - Precision: {precision}, Recall: {recall}, Accuracy: {accuracy}, F1 Score: {f1}"
+    )
 
 
 if __name__ == "__main__":
@@ -73,8 +86,7 @@ if __name__ == "__main__":
 
     # load pre-trained model
     model_path = os.path.abspath(
-        os.getenv("MODEL_PATH") or config.get(
-            "Paths", "model") or "./trained.pt"
+        os.getenv("MODEL_PATH") or config.get("Paths", "model") or "./trained.pt"
     )
     log.info(f"Model path: {model_path}")
 
