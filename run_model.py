@@ -7,10 +7,11 @@ from data_loader import process_single_image
 
 
 def run_model(model, image_path: str):
-    image = process_single_image(image_path)
-
     # using device to run model on machines with & without GPU
     device = get_device()
+
+    image = process_single_image(image_path).to(device)
+
     neural_net = model.to(device)
     print("masked" if torch.sigmoid(
         neural_net(image)).item() > 0.5 else "unmasked")
