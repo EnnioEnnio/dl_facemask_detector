@@ -20,11 +20,15 @@ def eval_model(model, testset_path):
 
     neural_net = model.to(device)
 
+    test_loader = make_evaluation_loader(testset_path)
+    # sklearn plots confusion matrices with TP oriented bottom-right, reverse
+    # class labels here in order to force "traditional" view of TP on top-left
+    classes = test_loader.dataset.classes[::-1])
+
     def plot_confusion_matrix(conf_matrix, title):
         plt.imshow(conf_matrix, interpolation="nearest", cmap=plt.cm.Blues)
         plt.title(title)
         plt.colorbar()
-        classes = test_loader.dataset.classes
         tick_marks = numpy.arange(len(classes))
         plt.xticks(tick_marks, classes, rotation=45)
         plt.yticks(tick_marks, classes)
@@ -45,8 +49,6 @@ def eval_model(model, testset_path):
         plt.ylabel("True label")
         plt.xlabel("Predicted label")
 
-    test_loader = make_evaluation_loader(testset_path)
-
     # run model on test set, collect predictions and actual labels
     labels_true = []
     labels_predictions = []
@@ -65,8 +67,14 @@ def eval_model(model, testset_path):
     accuracy = accuracy_score(labels_true, labels_predictions)
     f1 = f1_score(labels_true, labels_predictions)
 
+    print(sum(labels_predictions))
     # create confusion matrix
-    conf_matrix = confusion_matrix(labels_true, labels_predictions)
+    conf_matrix = confusion_matrix(
+        labels_true,
+        labels_predictions,
+        # see comment WRT reversing above
+        labels=[1, 0],
+    )
 
     # plot confusion matrix
     plot_confusion_matrix(

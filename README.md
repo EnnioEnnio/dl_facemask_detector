@@ -112,6 +112,9 @@ The training script can then be run with the following command:
 WANDB_MODE=disabled DATASET_PATH=$(pwd)/dataset/train python3 train_model.py
 ```
 
+**Note:** if you decide to test / train on a different dataset, ensure that the
+"masked" class is the positive class (label 1).
+
 ## Evaluation
 
 To run an evaluation loop on a batch of images, ensure you have taken the
@@ -131,14 +134,9 @@ The evaluation script can then be run with the following command:
 MODEL=$(pwd)/model.pt TESTSET_PATH=$(pwd)/dataset/test python3 eval_model.py
 ```
 
-<!-- TODO: should we still support this? -->
-<!-- To classify a single image, you may also invoke the `single` subcommand. You -->
-<!-- will need to provide your own image. We recommend a square image in which the -->
-<!-- subject's face is relatively centered for the best performance. -->
-<!---->
-<!-- ```shell -->
-<!-- MODEL=$(pwd)/model.pt python3 eval_model.py single --in=/path/to/my/image.png -->
-<!-- ``` -->
+**Note:** if you decide to evaluate on a different dataset, ensure that the
+"masked" class is the positive class (label 1).
+
 ## Running on Images
 
 It is possible to classify individual images with our model. Make sure you have completed all the steps in the [setup](#setup) section, including the specification of the path to the trained model.
