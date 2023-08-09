@@ -13,15 +13,16 @@ def run_model(model, image_path: str):
     image = process_single_image(image_path).to(device)
 
     neural_net = model.to(device)
-    print("masked" if torch.sigmoid(
-        neural_net(image)).item() > 0.5 else "unmasked")
+    print("masked" if torch.sigmoid(neural_net(image)).item() > 0.5 else "unmasked")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Predict masked/unmasked label from an image using a trained model as defined in the config.ini.")
-    parser.add_argument("--image", type=str,
-                        help="Path to the input image.", required=True)
+        description="Predict masked/unmasked label from an image using a trained model as defined in the config.ini."
+    )
+    parser.add_argument(
+        "--image", type=str, help="Path to the input image.", required=True
+    )
     args = parser.parse_args()
 
     model = Model1()
@@ -29,11 +30,12 @@ if __name__ == "__main__":
 
     # load pre-trained model
     model_path = os.path.abspath(
-        os.getenv("MODEL_PATH") or config.get(
-            "Paths", "model") or "./trained.pt"
+        os.getenv("MODEL_PATH") or config.get("Paths", "model") or "./trained.pt"
     )
     log.info(f"Model path: {model_path}")
 
-    model.load_state_dict(torch.load(model_path))
+    model.load_state_dict(
+        torch.load(model_path, map_location=torch.device(get_device()))
+    )
     model.eval()
     run_model(model, args.image)

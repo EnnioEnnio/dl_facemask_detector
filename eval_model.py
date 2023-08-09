@@ -1,5 +1,5 @@
 from architecture import Model1, load_and_modify_resnet18, LeNet
-from util import log, Config
+from util import log, Config, get_device
 import torch
 import os
 import numpy
@@ -9,6 +9,10 @@ from sklearn.metrics import confusion_matrix, precision_score, recall_score, acc
 
 
 def eval_model(model, testset_path):
+    # using device to run model on machines with & without GPU
+    device = get_device()
+
+    neural_net = model.to(device)
 
     def plot_confusion_matrix(conf_matrix, title):
         plt.imshow(conf_matrix, interpolation='nearest', cmap=plt.cm.Blues)
@@ -35,11 +39,10 @@ def eval_model(model, testset_path):
     # run model on test set, collect predictions and actual labels
     labels_true = []
     labels_predictions = []
-    total = len(test_loader.dataset)
     for data, label in test_loader:
         actual = label.item()
         labels_true.append(actual)
-        prediction = 1 if torch.sigmoid(model(data)).item() > 0.5 else 0
+        prediction = 1 if torch.sigmoid(neural_net(data)).item() > 0.5 else 0
         labels_predictions.append(prediction)
 
     labels_true = numpy.array(labels_true)
@@ -83,6 +86,8 @@ if __name__ == "__main__":
     )
     log.info(f"Test-set path: {testset_path}")
 
-    model.load_state_dict(torch.load(model_path))
+    model.load_state_dict(
+        torch.load(model_path, map_location=torch.device(get_device()))
+    )
     model.eval()
     eval_model(model, testset_path)
