@@ -20,7 +20,7 @@ For this project we have used GitHub user **X-zhangyang**'s
 
 For the sake of convenience, we have already pre-processed the dataset and are
 mirroring it
-[here](https://drive.google.com/file/d/1ip04I_bX-PuIXnuzoEhAL_UZW1qTXu8y/view?usp=sharing).
+[here](https://drive.google.com/uc?id=1fygtRvKbVeiloRRDROnE7dQtjvnyoyIv).
 
 
 ## Model
@@ -34,7 +34,7 @@ More details regarding the architecture and how it compares to other
 state of the art solutions can be found in the [project report](#report).
 
 A link to a pre-trained model can be found
-[here](https://drive.google.com/file/d/14Vk8ochj48OGOw6KAUaD4nEakPPcgIo4/view?usp=sharing).
+[here](https://drive.google.com/uc?id=1L6KSC6BS3gO3sDkzNvq7BoUlr-0lSlpM).
 
 ## Setup
 
