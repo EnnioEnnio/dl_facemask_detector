@@ -1,4 +1,4 @@
-from architecture import Model1, load_and_modify_resnet18
+from architecture import Model1
 from util import log, Config, get_device
 import os
 import torch
