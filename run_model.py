@@ -23,7 +23,7 @@ if __name__ == "__main__":
         "--image", type=str, help="Path to the input image.", required=True)
     args = parser.parse_args()
 
-    model = load_and_modify_resnet18()
+    model = Model1()
     config = Config()
 
     #load pre-trained model

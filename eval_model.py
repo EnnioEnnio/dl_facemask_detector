@@ -22,7 +22,7 @@ def eval_model(model, testset_path):
     test_loader = make_evaluation_loader(testset_path)
     # sklearn plots confusion matrices with TP oriented bottom-right, reverse
     # class labels here in order to force "traditional" view of TP on top-left
-    classes = test_loader.dataset.classes[::-1]
+    classes = test_loader.dataset.classes
 
     def plot_confusion_matrix(conf_matrix, title):
         plt.imshow(conf_matrix, interpolation="nearest", cmap=plt.cm.Blues)
@@ -62,13 +62,10 @@ def eval_model(model, testset_path):
     accuracy = accuracy_score(labels_true, labels_predictions)
     f1 = f1_score(labels_true, labels_predictions)
 
-    print(sum(labels_predictions))
     # create confusion matrix
     conf_matrix = confusion_matrix(
         labels_true,
         labels_predictions,
-        # see comment WRT reversing above
-        labels=[1, 0],
     )
 
     # plot confusion matrix
