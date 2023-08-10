@@ -23,7 +23,7 @@ def eval_model(model, testset_path):
     test_loader = make_evaluation_loader(testset_path)
     # sklearn plots confusion matrices with TP oriented bottom-right, reverse
     # class labels here in order to force "traditional" view of TP on top-left
-    classes = test_loader.dataset.classes[::-1])
+    classes = test_loader.dataset.classes[::-1]
 
     def plot_confusion_matrix(conf_matrix, title):
         plt.imshow(conf_matrix, interpolation="nearest", cmap=plt.cm.Blues)
@@ -55,7 +55,7 @@ def eval_model(model, testset_path):
     for data, label in test_loader:
         actual = label.item()
         labels_true.append(actual)
-        prediction = 1 if torch.sigmoid(neural_net(data)).item() > 0.5 else 0
+        prediction = 1 if torch.sigmoid(neural_net(data.to(device))).item() > 0.5 else 0
         labels_predictions.append(prediction)
 
     labels_true = numpy.array(labels_true)
