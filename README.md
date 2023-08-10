@@ -18,9 +18,10 @@ For this project we have used GitHub user **X-zhangyang**'s
 "Real-World-Masked-Face-Dataset". The original source can be found
 [here](https://github.com/X-zhangyang/Real-World-Masked-Face-Dataset).
 
-For the sake of convenience, we have already pre-processed the dataset and are
-mirroring it
-[here](https://drive.google.com/uc?id=1fygtRvKbVeiloRRDROnE7dQtjvnyoyIv).
+For the sake of convenience (in particular for demonstration purposes), we
+have already pre-processed the dataset and are mirroring it
+[here](https://drive.google.com/uc?id=1fygtRvKbVeiloRRDROnE7dQtjvnyoyIv). For
+model training, the original dataset mentioned above was used.
 
 
 ## Model
