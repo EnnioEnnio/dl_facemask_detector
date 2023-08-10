@@ -113,7 +113,7 @@ WANDB_MODE=disabled DATASET_PATH=$(pwd)/dataset/train python3 train_model.py
 ```
 
 **Note:** if you decide to test / train on a different dataset, ensure that the
-"masked" class is the positive class (label 1).
+"unmasked" class is the positive class (label 1).
 
 ## Evaluation
 
@@ -135,7 +135,7 @@ MODEL=$(pwd)/model.pt TESTSET_PATH=$(pwd)/dataset/test python3 eval_model.py
 ```
 
 **Note:** if you decide to evaluate on a different dataset, ensure that the
-"masked" class is the positive class (label 1).
+"unmasked" class is the positive class (label 1).
 
 ## Running on Images
 

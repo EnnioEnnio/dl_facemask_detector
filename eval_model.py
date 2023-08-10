@@ -17,7 +17,6 @@ from sklearn.metrics import (
 def eval_model(model, testset_path):
     # using device to run model on machines with & without GPU
     device = get_device()
-
     neural_net = model.to(device)
 
     test_loader = make_evaluation_loader(testset_path)
@@ -36,14 +35,10 @@ def eval_model(model, testset_path):
         thresh = conf_matrix.max() / 2.0
         for i in range(conf_matrix.shape[0]):
             for j in range(conf_matrix.shape[1]):
-                plt.text(
-                    j,
-                    i,
-                    format(conf_matrix[i, j], "d"),
-                    ha="center",
-                    va="center",
-                    color="white" if conf_matrix[i, j] > thresh else "black",
-                )
+                plt.text(j,i, format(conf_matrix[i, j], "d"), 
+                         ha="center", 
+                         va="center", 
+                         color="white" if conf_matrix[i, j] > thresh else "black",)
 
         plt.tight_layout(pad=1.5)
         plt.ylabel("True label")
