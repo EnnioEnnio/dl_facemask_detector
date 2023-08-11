@@ -1,28 +1,13 @@
 \documentclass{article}
 
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{csquotes}
+\usepackage{graphicx}
+\graphicspath{ {./assets/} }
+\usepackage[final,nonatbib]{neurips_2023}
 
-% if you need to pass options to natbib, use, e.g.:
-%     \PassOptionsToPackage{numbers, compress}{natbib}
-% before loading neurips_2023
-
-
-% ready for submission
-\usepackage{neurips_2023}
-
-
-% to compile a preprint version, e.g., for submission to arXiv, add add the
-% [preprint] option:
-%     \usepackage[preprint]{neurips_2023}
-
-
-% to compile a camera-ready version, add the [final] option, e.g.:
-%     \usepackage[final]{neurips_2023}
-
-
-% to avoid loading the natbib package, add option nonatbib:
-%    \usepackage[nonatbib]{neurips_2023}
-
-
+\usepackage{floatrow}
 \usepackage[utf8]{inputenc} % allow utf-8 input
 \usepackage[T1]{fontenc}    % use 8-bit T1 fonts
 \usepackage{hyperref}       % hyperlinks
@@ -32,458 +17,267 @@
 \usepackage{nicefrac}       % compact symbols for 1/2, etc.
 \usepackage{microtype}      % microtypography
 \usepackage{xcolor}         % colors
+\usepackage{glossaries}
+\glsdisablehyper
+
+\usepackage[style=authoryear-icomp,maxbibnames=9,maxcitenames=1,backend=biber]{biblatex}
+\addbibresource{report.bib}
 
 
-\title{Formatting Instructions For NeurIPS 2023}
+\title{Deep Learning Facemask Detection With CNNs}
 
-
-% The \author macro works with any number of authors. There are two commands
-% used to separate the names and addresses of multiple authors: \And and \AND.
-%
-% Using \And between authors leaves it to LaTeX to determine where to break the
-% lines. Using \AND forces a line break at that point. So, if LaTeX puts 3 of 4
-% authors names on the first line, and the last on the second line, try using
-% \AND instead of \And before the third author name.
-
-
-\author{%
-  David S.~Hippocampus\thanks{Use footnote for providing further information
-    about author (webpage, alternative address)---\emph{not} for acknowledging
-    funding agencies.} \\
-  Department of Computer Science\\
-  Cranberry-Lemon University\\
-  Pittsburgh, PA 15213 \\
-  \texttt{hippo@cs.cranberry-lemon.edu} \\
-  % examples of more authors
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \AND
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
+\author{
+  Ennio Strohauer\\
+  \texttt{ennio.strohauer@hpi.uni-potsdam.de} \\
+  \And
+  Samuel Kunst\\
+  \texttt{samuel.kunst@hpi.uni-potsdam.de} \\
 }
 
 
 \begin{document}
 
+\newacronym{rmfd}{RMFD}{Real-World Masked Face Dataset}
+\newacronym{cnn}{CNN}{Convolutional Neural Network}
+\newacronym{sgd}{SGD}{Stochastic Gradient Descent}
+\newacronym{bce}{BCE}{Binary Cross-Entropy}
+\newacronym{cv}{CV}{computer vision}
 
 \maketitle
 
-
 \begin{abstract}
-  The abstract paragraph should be indented \nicefrac{1}{2}~inch (3~picas) on
-  both the left- and right-hand margins. Use 10~point type, with a vertical
-  spacing (leading) of 11~points.  The word \textbf{Abstract} must be centered,
-  bold, and in point size 12. Two line spaces precede the abstract. The abstract
-  must be limited to one paragraph.
+This report presents our deep-learning project focused on classifying individuals wearing face masks using a \gls{cnn} architecture. We address key challenges in dataset collection, preprocessing, and model optimization. Our \gls{cnn} model achieves a commendable 94\% accuracy in correctly identifying mask usage across diverse scenarios. This work underscores the significance of deep learning in public health and offers a promising tool for real-world mask detection, while acknowledging potential areas for future enhancement.
 \end{abstract}
 
+\glsresetall
 
-\section{Submission of papers to NeurIPS 2023}
+\section{Introduction}
+\label{intro}
 
+The COVID-19 pandemic presented a global health and safety crisis of unprecedented scale. As part of preventative actions, one of the most commonly employed countermeasures taken by many institutions was the mandated wearing of face masks. Especially in critical infrastructure, for instance hospitals or high congestion points such as airports, the wearing of face masks played an important factor in slowing the virus' rate of spread. However, enforcing such requirements is often easier said than done, especially on larger scales.
 
-Please read the instructions below carefully and follow them faithfully. \textbf{Important:} This year the checklist will be submitted separately from the main paper in OpenReview, please review it well ahead of the submission deadline: \url{https://neurips.cc/public/guides/PaperChecklist}.
+Machine learning models are arguably an excellent solution candidate for this problem domain. Given properly diverse and well-constructed datasets, classification models are able to accurately distinguish many classes to an amply sufficient degree, and do so with both greater efficiency and at a greater scale when compared to alternative methods.
 
+That being said, classification tasks are no new idea in the field of digital health, and in fact are already often employed in related processes such as medical imaging, for instance in the detection of malignant cancer cells. As such, this report aims to document our process of building upon existing state-of-the-art solutions in order to construct a classifier which is able to accurately detect an face-mask-wearing individual in a variety of contexts, for instance by mask type/color, angle, or ethnicity. We also discuss some of the challenges and considerations which were taken during this process and outline the various processing steps and technical measures which we undertook during the training of these models. Finally, we discuss our results and go into the limitations of our findings, suggesting possible further extensions to the presented work.
 
-\subsection{Style}
+\section{Related Work}
+\label{relwork}
 
+Face mask detection, particularly post-global pandemic, has become a domain of keen interest. As public safety emerged as a paramount concern, there was a surge in automated systems to ensure proper face mask usage. We examine notable contributions in this domain:
 
-Papers to be submitted to NeurIPS 2023 must be prepared according to the
-instructions presented here. Papers may only be up to {\bf nine} pages long,
-including figures. Additional pages \emph{containing only acknowledgments and
-references} are allowed. Papers that exceed the page limit will not be
-reviewed, or in any other way considered for presentation at the conference.
+Vinh et al. delve into traditional image processing techniques like Haar cascades. Their work, conducted in 2020, suggests that while these techniques have shown proficiency in controlled setups, they exhibit limitations when presented with varied lighting, diverse mask types, and multiple facial poses \autocite{9353070}.
 
+Deep Learning Approaches have, by and large, been the focal point for image-based classifications inclusive of face mask detection. Among these, the use of \Glspl{cnn} has been most prevalent. Mandal et al., in their 2021 research, give weight to the argument by using \textit{ResNet} architectures, fine-tuned specifically for this task. Their findings report exceptional outcomes, thereby placing \Glspl{cnn} at the forefront of mask detection techniques \autocite{mandal2021masked}.
 
-The margins in 2023 are the same as those in previous years.
+Talahua et al. in 2021 explored the confluence of face mask detection and facial recognition. The challenge that emerges, as underscored by their research, is the ability of the system to recognize individuals, especially when a considerable part of their face remains concealed behind a mask \autocite{su13126900}.
 
+% Datasets, undeniably, have been the cornerstone for creating potent models. "Real-World-Masked-Face-Dataset" has been pivotal in this respect. This dataset is replete with an array of labeled data, encompassing an array of mask types, subject positioning, and varied lighting conditions.
 
-Authors are required to use the NeurIPS \LaTeX{} style files obtainable at the
-NeurIPS website as indicated below. Please make sure you use the current files
-and not previous versions. Tweaking the style files may be grounds for
-rejection.
+% In summation, face mask detection is an evolving realm that has seen continuous refinements.
+Drawing from these foundational studies, our endeavor aims to engineer an adept solution tailored to our problem domain.
 
+\section{Dataset}
+\label{dataset}
 
-\subsection{Retrieval of style files}
+In the course of this research, we utilized the \href{https://github.com/X-zhangyang/Real-World-Masked-Face-Dataset}{\gls{rmfd}} developed by GitHub contributor \texttt{X-zhangyang}. This dataset was facilitated by the \textit{National Multimedia Software Engineering Technology Research Center} at Wuhan University. Given the context of our research, it's noteworthy to mention that the \gls{rmfd}, with its expansive collection of 92,651 images, is considerably extensive. The curation of this dataset was a direct response to the worldwide adoption of mask-wearing, instigated by the COVID-19 pandemic. As articulated in the documentation accompanying the \gls{rmfd}, its overarching aim is to "provide data resources to aid in addressing analogous public safety occurrences in subsequent times" \footnote{This description was translated to English from Chinese and may not be accurate word-for-word}. With regard to facial orientations and diversity in mask types, the \gls{rmfd} offers a commendable range. Nonetheless, during our engagement with this dataset, we encountered certain challenges, which will be elaborated upon.
 
+\subsection{Data Processing}
 
-The style files for NeurIPS and other conference information are available on
-the website at
-\begin{center}
-  \url{http://www.neurips.cc/}
-\end{center}
-The file \verb+neurips_2023.pdf+ contains these instructions and illustrates the
-various formatting requirements your NeurIPS paper must satisfy.
+The \gls{rmfd} consists of masked 90,468 and unmasked 2,183 colored RGB images. The contents of the dataset are largely unstructured, both in image dimensions as well as file structure. This made initial evaluation difficult and prompted considerable preprocessing before training. 
 
+Our preprocessing steps involved utilizing PyTorch's \texttt{ImageTransform} compositions to apply a series of transformations in order to standardize the dataset to have both consistent characteristics in addition to having compatible dimensions with our model architectures. In particular, the processing pipeline we opted for consisted of the following sequence of transformations:
 
-The only supported style file for NeurIPS 2023 is \verb+neurips_2023.sty+,
-rewritten for \LaTeXe{}.  \textbf{Previous style files for \LaTeX{} 2.09,
-  Microsoft Word, and RTF are no longer supported!}
+\begin{enumerate}
+    \item Convert to grayscale
+    \item Center crop to $\nicefrac{1}{1}$ aspect ratio
+    \item Resize to $(256, 256)$
+    \item Normalize pixel values
+    \item Convert to PyTorch \texttt{Tensor} object
+\end{enumerate}
 
+We opted for conversion to grayscale with the goal of promoting structural feature detection, such as edges. Combined with normalization, we hoped that this choice would lead improved generalization performance. With this being said, the use of \texttt{ImageTransforms} offers the distinct benefit of just-in-time (i.e on-the-fly) processing during training. This makes it very easy to adapt the transformations used from one training run to the next, without having to manually re-process the entire original dataset. This flexibility proved extremely valuable, particularly during iteration on model parameters.
 
-The \LaTeX{} style file contains three optional arguments: \verb+final+, which
-creates a camera-ready copy, \verb+preprint+, which creates a preprint for
-submission to, e.g., arXiv, and \verb+nonatbib+, which will not load the
-\verb+natbib+ package for you in case of package clash.
+There are a number of assumptions and considerations which arise out of our preprocessing,  most notably that the subject was placed about the center of the image. Furthermore, we assume that images were taken in comparable environments in terms of lighting, distance to subject, and/or rotation. We aimed to mitigate any outliers via pixel normalization, although this would only aid in standardizing lighting conditions rather than the other previously mentioned discrepancies.
 
+\subsection{Dataset Structure}
 
-\paragraph{Preprint option}
-If you wish to post a preprint of your work online, e.g., on arXiv, using the
-NeurIPS style, please use the \verb+preprint+ option. This will create a
-nonanonymized version of your work with the text ``Preprint. Work in progress.''
-in the footer. This version may be distributed as you see fit, as long as you do not say which conference it was submitted to. Please \textbf{do
-  not} use the \verb+final+ option, which should \textbf{only} be used for
-papers accepted to NeurIPS. 
+Another aspect of our data-processing is the lack of distinct testing and evaluation (or holdback) sets. To address this issue, we opted for manually picking a one-time randomly chosen seed value which we utilized to remove 100 images from each class in an unbiased manner. These images were manually removed from the original dataset and were exclusively used during evaluation in order to reduce the likelihood of memorization-bias during performance evaluation.
 
+\subsection{Class and Demographic Imbalances}
 
-At submission time, please omit the \verb+final+ and \verb+preprint+
-options. This will anonymize your submission and add line numbers to aid
-review. Please do \emph{not} refer to these line numbers in your paper as they
-will be removed during generation of camera-ready copies.
+Additionally, the substantial class imbalance posed a potential issue which required addressing. We opted to create a custom sampler which favored the underrepresented class more heavily during training. Using this sampler would ensure an even split of masked to unmasked samples during training runs. Despite this, there are a number of implications which arise out of this methodology, which we discuss in further in the discussion and results section of this report. Another option we considered was to augment our dataset, however we ended up not incorporating this technique. Given the substantial volume of our dataset, our primary objective was to first and foremost develop a functional model. Introducing augmented images would have escalated both the storage requirements and the computational time during training. However, it's worth noting that our file architecture is designed with flexibility in mind. This means that integrating data augmentation in the future can be seamlessly achieved by modifying our data-loader system.
 
+The final --- and potentially most significant --- consideration with regards to the \gls{rmfd} is a lack of ethnic diversity. The dataset consisted of entirely East Asian subjects, which we initially thought may pose an issue in terms of model performance when applying it to other demographics. Again, we  considered data augmentation with computer-generated samples in order to achieve a more representative dataset, however opted to not due to the same reasons described above. We discuss the implications of this decision in more detail in the discussion section of this report.
 
-The file \verb+neurips_2023.tex+ may be used as a ``shell'' for writing your
-paper. All you have to do is replace the author, title, abstract, and text of
-the paper with your own.
 
+% The RMFD can be broadly categorized into:
+% \begin{enumerate}
+%     \item Real-world masked face recognition dataset: Contains 5,000 masked face images from 525 individuals. Also includes 90,000 images of unmasked faces.
+%     \item Simulated masked face recognition datasets: Masks were digitally added to faces from public datasets. Contains a massive 500,000 masked faces from 10,000 different subjects.
+% \end{enumerate}
 
-The formatting instructions contained in these style files are summarized in
-Sections \ref{gen_inst}, \ref{headings}, and \ref{others} below.
+% Separate datasets include:
+% \begin{enumerate}
+%     \item WebFace simulated dataset.
+%     \item LFW simulated dataset.
+%     \item AgeDB-30 simulated dataset.
+%     \item CFP-FP simulated dataset.
+% \end{enumerate}
 
+% The \gls{rmfd} verification dataset which contains 4015 face images of 426 people. The dataset is further organized into 7178 masked and non-masked sample pairs, including 3589 pairs of the same identity and 3589 pairs of different identities.
 
-\section{General formatting instructions}
-\label{gen_inst}
+% For the development of our model we solely used the \gls{rmfd} without simulated masked faces.
 
+\section{Methodology}
+\label{sec:methods}
 
-The text must be confined within a rectangle 5.5~inches (33~picas) wide and
-9~inches (54~picas) long. The left margin is 1.5~inch (9~picas).  Use 10~point
-type with a vertical spacing (leading) of 11~points.  Times New Roman is the
-preferred typeface throughout, and will be selected for you by default.
-Paragraphs are separated by \nicefrac{1}{2}~line space (5.5 points), with no
-indentation.
+The following section goes into detail regarding our choices in relation to model architectures and our training/evaluation processes.
 
+\subsection{Model Architectures}
+\label{arch}
 
-The paper title should be 17~point, initial caps/lower case, bold, centered
-between two horizontal rules. The top rule should be 4~points thick and the
-bottom rule should be 1~point thick. Allow \nicefrac{1}{4}~inch space above and
-below the title to rules. All pages should start at 1~inch (6~picas) from the
-top of the page.
+For our model architectures, a convolution-based approach was chosen and subsequently developed. \Glspl{cnn} are the de-facto industry standard when it comes to problem domains of this type, offering both excellent levels of performance in addition to parallelization across model and data dimensions alike. This allows for efficient scaling in larger datasets and/or application contexts, a feature which is particularly desirable in the context of our problem.
 
+The primary model architecture used in this project is a modified version of the \textit{LeNet-5} model \autocite{lecun98}.  The original \textit{LeNet-5} model was designed by Yann LeCun and is one of the pioneering convolutional neural networks (CNNs) that significantly impacted the field of deep learning at its time, especially in image classification tasks. The modified architecture, from heron out referred to as \textit{Model1}\footnote{We are not graded on creativity (at least we hope so\dots)},  is constructed as follows:
 
-For the final version, authors' names are set in boldface, and each name is
-centered above the corresponding address. The lead author's name is to be listed
-first (left-most), and the co-authors' names (if different address) are set to
-follow. If there is only one co-author, list both author and co-author side by
-side.
+\begin{enumerate}
+    \item Convolutional Layer 1: This layer has 6 filters with a kernel size of $5\times5$. It is followed by batch normalization, a \textit{ReLU} activation function, and a max-pooling layer with a kernel size of $2\times2$.
+    \item Convolutional Layer 2: This layer is identical to the first convolutional layer, except that it consists of 16 $5 \time 5$ filter kernels rather than 6.
+    \item Fully Connected Layer 1: This FC layer has 512 neurons and is followed by a \textit{ReLU} activation function.
+    \item Fully Connected Layer 2: This FC layer consists of 256 neurons and is followed by a \textit{ReLU} activation function.
+    \item Output Layer: The final layer is a fully connected layer with a single neuron, which outputs the probability of a person wearing a mask.
+\end{enumerate}
 
+In terms of depth and layer buildup, \textit{Model1} and \textit{LeNet-5} are comparable.
+The primary differences lie in \textit{Model1}'s increased kernel and FC-layer dimensions, as well as the use of \textit{ReLU} rather than $tanh$ as an activation function. \textit{LeNet} also makes use of average-pooling rather than max-pooling.
 
-Please pay special attention to the instructions in Section \ref{others}
-regarding figures, tables, acknowledgments, and references.
+For comparison purposes, the original \textit{LeNet-5} architecture was also implemented and trained, as well as a modified version of the state-of-the-art \textit{ResNet-18} model, where the final fully connected layer was modified to accommodate our binary classification problem. Comparisons between these three architectures are discussed in further depth in the \hyperref[sec:discussion]{discussion} section.
 
+\subsection{Training}
 
-\section{Headings: first level}
-\label{headings}
+Each model was trained using the same base training loop (\texttt{train\_model.py}). The training loop was responsible for creating and initializing data-loaders for both training and validation. We opted for a validation split of $0.2$, or 20\% of all images, to be randomly selected prior to each training loop. This practice is rooted in the need to prevent over-fitting in addition to ensuring that the model is routinely evaluated on data it has not seen during training. We found $0.2$ to be a good middle-ground in this regard, as a larger validation split could lead to reduced training data, potentially hindering convergence.
 
+After experimenting with various epoch values, we settled on a value of 200 iterations. This decision was guided by  the observation that our best-performing model demonstrated significant convergence in roughly half of this period, showing only marginal improvements after this period. Furthermore our problem, being a binary classification task, is in most regards quite a simple task from a technical standpoint. As such we did not feel that adding more epochs justified the increased training time for such a small return. Additionally, we also implemented early-stopping wherin training would halt after no improvement was made for 10 epochs. This resulted in our observed number of epochs being closer to 75-125.
 
-All headings should be lower case (except for first word and proper nouns),
-flush left, and bold.
+For our binary classification task, we employed the \gls{bce} loss function. This choice is well-suited to our problem, as it penalizes deviations between predicted probabilities and actual binary labels. \gls{sgd} was chosen as the optimizer due to its simplicity and effectiveness in finding optimal solutions. We experimented with alternative optimizers such as Adam but did not see any 
+significant changes when compared to \gls{sgd}.
 
+Our learning rate was set at 0.01 after systematic exploration. This learning rate strikes a balance between rapid convergence and stability in the training process. Extensive trials were conducted with learning rates spanning several orders of magnitude, and 0.01 consistently yielded satisfactory results without inducing convergence issues or slowing down training too significantly.
 
-First-level headings should be in 12-point type.
+Furthermore, a batch size of 128 was chosen based on considerations of both computational efficiency and model convergence. This size effectively utilizes hardware capabilities and GPU memory while ensuring an appropriate balance between noise introduced by small batches and the potential for faster convergence. The chosen batch size proved effective in achieving stable and efficient training across various experiments and model iterations.
 
+\subsection{Evaluation}
 
-\subsection{Headings: second level}
+Following training, we loaded each serialized model into an evaluation script (\texttt{eval\_model.py}) and used our holdout set constructed during preprocessing to evaluate model performance. As with the training script, we used PyTorch's data-loaders to transform our testset samples into the required shape expected by each model. Metrics and graphics were generated using \texttt{sklearn} and \texttt{matplotlib}, respectively.
 
+\newpage
 
-Second-level headings should be in 10-point type.
+% \subsection{Preprocessing}
 
+% The images provided came in a variety of different aspect ratios and sizes and required some preprocessing . 
+% The preprocessing is done in three steps:
+% \begin{enumerate}
+%     \item Grayscale Transformation: The images are converted to grayscale. However, even after this transformation, the images are stored with three channels to maintain compatibility with pre-trained models that expect three-channel inputs. This is achieved using the transforms. Grayscale(\texttt{num\_output\_channels}=3) function
+%     \item Resizing: All images are resized to a consistent shape of $256x256$ pixels. This ensures that the neural network receives inputs of a consistent size. The resizing is done using the transforms.Resize(resize\_shape, antialias=True) function, where resize\_shape is set to $(256, 256)$.
+%     \item Tensor Transformation: The images are converted to PyTorch tensors using the \texttt{transforms.ToTensor()} function. This transformation also scales the pixel values from the range $[0, 255]$ to $[0, 1]$. These preprocessing steps are encapsulated in the \texttt{make\_common\_image\_transforms} function in the \texttt{data\_loader.py} file.
+% \end{enumerate}
 
-\subsubsection{Headings: third level}
+% It's worth noting that our work is designed with flexibility in mind. This means that integrating another data set can be seamlessly achieved by running the preprocessing as described in the \texttt{README.md} file.
 
+% \subsection{Data Sampling}
 
-Third-level headings should be in 10-point type.
+% The training script uses balanced data sampling, ensuring that there's an equal representation of both classes (masked and unmasked) in each batch. This is crucial for training a model on imbalanced datasets, as it prevents the model from being biased towards the majority class.
 
 
-\paragraph{Paragraphs}
+% \subsection{Data Augmentation}
 
+% In the initial phase of our project, we opted not to incorporate specific data augmentation techniques. Given the substantial volume of our dataset, which comprises 90,000 images, our primary objective was to develop a functional model. Introducing augmented images would have escalated both the storage requirements and the computational time during training. However, it's worth noting that our file architecture is designed with flexibility in mind. This means that integrating data augmentation in the future can be seamlessly achieved by adding modifications to the \texttt{data\_loader.py} file.
 
-There is also a \verb+\paragraph+ command available, which sets the heading in
-bold, flush left, and inline with the text, with the heading followed by 1\,em
-of space.
+\section{Results}
 
+In this section you will find our evaluation results for \textit{Model1}, \textit{ResNet}, and \textit{LetNet} respectively. Further analysis and evaluation of these results follows in the proceeding \hyperref[sec:discussion]{discussion} section.
 
-\section{Citations, figures, tables, references}
-\label{others}
 
 
-These instructions apply to everyone.
-
-
-\subsection{Citations within the text}
-
-
-The \verb+natbib+ package will be loaded for you by default.  Citations may be
-author/year or numeric, as long as you maintain internal consistency.  As to the
-format of the references themselves, any style is acceptable as long as it is
-used consistently.
-
-
-The documentation for \verb+natbib+ may be found at
-\begin{center}
-  \url{http://mirrors.ctan.org/macros/latex/contrib/natbib/natnotes.pdf}
-\end{center}
-Of note is the command \verb+\citet+, which produces citations appropriate for
-use in inline text.  For example,
-\begin{verbatim}
-   \citet{hasselmo} investigated\dots
-\end{verbatim}
-produces
-\begin{quote}
-  Hasselmo, et al.\ (1995) investigated\dots
-\end{quote}
-
-
-If you wish to load the \verb+natbib+ package with options, you may add the
-following before loading the \verb+neurips_2023+ package:
-\begin{verbatim}
-   \PassOptionsToPackage{options}{natbib}
-\end{verbatim}
-
-
-If \verb+natbib+ clashes with another package you load, you can add the optional
-argument \verb+nonatbib+ when loading the style file:
-\begin{verbatim}
-   \usepackage[nonatbib]{neurips_2023}
-\end{verbatim}
-
-
-As submission is double blind, refer to your own published work in the third
-person. That is, use ``In the previous work of Jones et al.\ [4],'' not ``In our
-previous work [4].'' If you cite your other papers that are not widely available
-(e.g., a journal paper under review), use anonymous author names in the
-citation, e.g., an author of the form ``A.\ Anonymous'' and include a copy of the anonymized paper in the supplementary material.
-
-
-\subsection{Footnotes}
-
-
-Footnotes should be used sparingly.  If you do require a footnote, indicate
-footnotes with a number\footnote{Sample of the first footnote.} in the
-text. Place the footnotes at the bottom of the page on which they appear.
-Precede the footnote with a horizontal rule of 2~inches (12~picas).
-
-
-Note that footnotes are properly typeset \emph{after} punctuation
-marks.\footnote{As in this example.}
-
-
-\subsection{Figures}
-
-
-\begin{figure}
-  \centering
-  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-  \caption{Sample figure caption.}
-\end{figure}
-
-
-All artwork must be neat, clean, and legible. Lines should be dark enough for
-purposes of reproduction. The figure number and caption always appear after the
-figure. Place one line space before the figure caption and one line space after
-the figure. The figure caption should be lower case (except for first word and
-proper nouns); figures are numbered consecutively.
-
-
-You may use color figures.  However, it is best for the figure captions and the
-paper body to be legible if the paper is printed in either black/white or in
-color.
-
-
-\subsection{Tables}
-
-
-All tables must be centered, neat, clean and legible.  The table number and
-title always appear before the table.  See Table~\ref{sample-table}.
-
-
-Place one line space before the table title, one line space after the
-table title, and one line space after the table. The table title must
-be lower case (except for first word and proper nouns); tables are
-numbered consecutively.
-
-
-Note that publication-quality tables \emph{do not contain vertical rules.} We
-strongly suggest the use of the \verb+booktabs+ package, which allows for
-typesetting high-quality, professional tables:
-\begin{center}
-  \url{https://www.ctan.org/pkg/booktabs}
-\end{center}
-This package was used to typeset Table~\ref{sample-table}.
-
-
-\begin{table}
-  \caption{Sample table title}
+\begin{table}[h!]
+  \caption{Evaluation performance of all three tested models}
   \label{sample-table}
   \centering
-  \begin{tabular}{lll}
+  \begin{tabular}{lllll}
     \toprule
-    \multicolumn{2}{c}{Part}                   \\
     \cmidrule(r){1-2}
-    Name     & Description     & Size ($\mu$m) \\
+    Model  & Accuracy & Precision & Recall & F1-Score \\
     \midrule
-    Dendrite & Input terminal  & $\sim$100     \\
-    Axon     & Output terminal & $\sim$10      \\
-    Soma     & Cell body       & up to $10^6$  \\
+\textit{Model1} & 0.940  & 1.000  & 0.880 & 0.936   \\
+    \textit{ResNet} & 0.985  & 0.980  & 0.990 & 0.985   \\
+    \textit{LetNet} & 0.500  & -      & 0.000 & 0.00   \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\subsection{Math}
-Note that display math in bare TeX commands will not create correct line numbers for submission. Please use LaTeX (or AMSTeX) commands for unnumbered display math. (You really shouldn't be using \$\$ anyway; see \url{https://tex.stackexchange.com/questions/503/why-is-preferable-to} and \url{https://tex.stackexchange.com/questions/40492/what-are-the-differences-between-align-equation-and-displaymath} for more information.)
+\begin{figure}[h!]
+  \begin{floatrow}
+    \ffigbox{\includegraphics[scale=0.45]{confusion-model-1}}{\centering\caption{Confusion matrix for \textit{Model1}}}
+    \ffigbox{\includegraphics[scale=0.45]{confusion-lenet}}{\centering\caption{Confusion matrix for \textit{LeNet}}}
+  \end{floatrow}
+\hrulefill
+  \begin{floatrow}
+    \ffigbox{\includegraphics[scale=0.45]{confusion-resnet}}{\centering\caption{Confusion matrix for \textit{ResNet}}}
+  \end{floatrow}
+\end{figure}
 
-\subsection{Final instructions}
+As expected, the modified \textit{ResNet} performed the best with roughly 98\% accuracy. Not too far off behind was \textit{Model1} with a respectable 94\%. \textit{Model1} showcased impressive precision at a perfect score of 1.00, indicating that every instance predicted as \enquote{masked} was indeed masked. However, its recall stood at 0.88, implying that it failed to identify 12\% of actual masked instances. Despite this, the model achieved an accuracy of 0.94 and an F1 Score of 0.936, demonstrating a satisfactory balance between precision and recall.
 
-Do not change any aspects of the formatting parameters in the style files.  In
-particular, do not modify the width or length of the rectangle the text should
-fit into, and do not change font sizes (except perhaps in the
-\textbf{References} section; see below). Please note that pages should be
-numbered.
+\textit{ResNet} presented stellar results, with nearly impeccable scores across all metrics. Its precision and recall were 0.985 and 0.99 respectively, reflecting an almost flawless prediction capability for the masked class. With an accuracy of 0.985 and an F1 score mirroring the same value, \textit{ResNet} proves its efficacy in this binary classification task.
 
-
-\section{Preparing PDF files}
-
-
-Please prepare submission files with paper size ``US Letter,'' and not, for
-example, ``A4.''
-
-
-Fonts were the main cause of problems in the past years. Your PDF file must only
-contain Type 1 or Embedded TrueType fonts. Here are a few instructions to
-achieve this.
+\textit{LeNet}, on the other hand, encountered challenges in this dataset. Its recall of 0 suggests that it couldn't successfully identify any of the masked instances. This can be inferred from its F1 score, also standing at 0, indicating a poor harmonic mean of precision and recall. Despite this, the model managed an accuracy of 0.5. This is, however, in all regards unimpressive as you may as well flip a coin to exhibit similar performance (under the assumption of an even distribution as is the case with our processed dataset).
 
 
-\begin{itemize}
+\section{Evaluation \& Discussion}
+\label{sec:discussion}
+
+In this section we touch on various aspects of our model results, methodology, and data sampling in further detail, discussing various concerns or insights while suggesting further areas of improvement.
+
+\subsection{Model Performance}
+
+Clearly (and as expected), \textit{ResNet} performed the best out of all tested architectures. This being said, \textit{Model1} arguably held its own against \textit{ResNet}, falling only 4\% behind in accuracy. This discrepancy, although measureable, is still less than we had expected. It is likely that a binary classification problem such as ours is simply \enquote{easy} enough such that any sufficiently complex model will be able to produce satisfactory results even without much optimization, especially when combined with a large enough dataset as is the case in this project.
+
+With this in mind, the problem was evidently not \enquote{easy} enough for \textit{LeNet}. We suspect that the underperformance of \textit{LeNet} is attributed to the architectural limitations of the model, as well as the contrast between the original model's design objectives and the complexity of the task at hand. We believe that being designed around the simpler and more constrained image recognition task of handwritten zip-code detection, \textit{LeNet}'s simply did not have the capacity to properly learn off of our dataset. Unlike its original design intent, the task of mask detection necessitates the identification of comparatively more intricate spatial patterns and features. As such, we can see that due to \textit{LeNet}'s relatively shallow depth in combination with a lower amount of total parameters, its performance ceiling was limited, hence why it opted to \enquote{learn} to always predict  one class over the other in order to reach a less-than-satisfactory accuracy of 50\%. Perhaps if we had used smaller image dimensions, say $(64,64)$ or $(48,48)$, we may have seen better results with \textit{LeNet} due to the reasons previously outlined. Of course, this comes at the tradeoff of less information being available to the better performing models, which may reduce their inference capabilities.
+
+\subsection{Data Sampling}
+
+With regards to data sampling for our mask detection task, we made a conscious decision to employ a balanced sampler. As discussed in our dataset explanation, this choice was motivated by the initial overrepresentation of the masked population in the dataset. While it could be argued that the overrepresentation of the positive class might appear justified due to the prevailing context of widespread mask usage during the study period, we ultimately decided to training our model without context of actual real-world distribution of mask-wearers.
+
+In particular, our reasoning for employing \enquote{fair} sampling was due to the fact that our goals with this project were more strongly rooted in exploring effective deep learning methods and architectures as opposed to modeling the dataset distribution as accurately as possible, despite its alignment with the mask-wearing trends at the time. That being said, investigating a possible better balance between reflecting real-world distribution and minimizing classification errors would provide an interesting and beneficial extension to our work.
+
+In the course of our final evaluations, we identified a critical oversight regarding the labeling convention. Contrary to the initial documentation, where the \textit{'masked'} class was denoted by the label 1, our processed data had \textit{'masked'} labeled as 0, with \textit{'unmasked'} correspondingly labeled as 1. Despite this inversion, the consistency across all our models and methods ensured that predictions were accurate; however, this impacted the subsequently derived metrics and prompted several re-calculations over additional trials. With the correct label orientation, we recalculated the metrics manually to reflect the genuine performance of the models. While such a deviation may lead some to contend that we inadvertently designed a \enquote{no-facemask-detector} rather than a \enquote{facemask-detector}, it is crucial to underscore that the underlying architecture, training, and model performance remained robust and consistent. The models successfully discerned and classified the presented visual features, irrespective of the labeling nomenclature. In future work, it would be beneficial to explicitly define strong label conventions in order to mitigate the additional work caused by situations such as this one.
+
+\subsection{Overfitting}
+
+During our training process, we encountered challenges related to overfitting, in which validation performance fluctuated wildly while training errors continued to decrease. As a possible solution, we considered implementing k-means clustering as a strategy to address overfitting. However, while the application of k-means appeared promising, we were limited in terms of time and decided not to employ this strategy for our training. Investigating the effects of this method could provide valuable insights into enhancing model generalization and combating overfitting in complex image classification tasks.
 
 
-\item You should directly generate PDF files using \verb+pdflatex+.
+\begin{figure}[h!]
+  \begin{floatrow}
+    \ffigbox{\includegraphics[scale = 0.065]{model-1-loss}}{\centering\caption{A typical loss chart for \textit{Model1} during training} }
+    \ffigbox{\includegraphics[scale = 0.065]{model-1-vloss}}{\centering\caption{A typical validation loss chart for \textit{Model1} during training} }
+  \end{floatrow}
+\end{figure}
 
 
-\item You can check which fonts a PDF files uses.  In Acrobat Reader, select the
-  menu Files$>$Document Properties$>$Fonts and select Show All Fonts. You can
-  also use the program \verb+pdffonts+ which comes with \verb+xpdf+ and is
-  available out-of-the-box on most Linux machines.
+% TODO: talk about balanced sampler: what is a good idea, maybe we WANT to predict masked more eagerly
+% TODO: talk about k-means + overfitting
 
+\subsection{Dataset}
 
-\item \verb+xfig+ "patterned" shapes are implemented with bitmap fonts.  Use
-  "solid" shapes instead.
+As mentioned when discussing our dataset, one of the primary concerns which had come up during initial preprocessing was the lack of clear demographic diversification within the dataset. As part of addressing this concern, we tested our primary model \textit{Model1} on a completely new facemask dataset in order to obtain an unbiased estimate on the model's performance on completely unseen data from a new distribution. The dataset chosen was from Kaggle user \texttt{pranavsingaraju}'s \enquote{\href{https://github.com/X-zhangyang/Real-World-Masked-Face-Dataset}{Facemask Detection}} dataset, and contained a more diverse set of images from which we randomly sampled 200 masked and unmasked images each. For this experiment, the same evaluation steps were taken as with the original dataset. As it turns out, this concern ended up being less of an issue than we had originally estimated it to be. At roughly 76\%, accuracy had only dropped by 13\%. Although noticeable, this result is still much better than we had originally estimated and is in the realm of what we consider to be an acceptable loss in performance under the context of a completely new, unseen distribution. We attribute this to be due to the fact that the model learned to focus on identifying masks in terms of contrast rather than in relation to other facial features, thus making the subject's other identifying characteristics less important. It is worth noting, however, that recall was substantially lower. We believe this is due to the fact that the dataset consisted of black and white images in which every subject had a white mask. This may have resulted in less contrast, and as such less prominent feature detection which resulted in the model over-eagerly predicting individuals to not be wearing a face-mask.
 
+\section{Conclusion}
 
-\item The \verb+\bbold+ package almost always uses bitmap fonts.  You should use
-  the equivalent AMS Fonts:
-\begin{verbatim}
-   \usepackage{amsfonts}
-\end{verbatim}
-followed by, e.g., \verb+\mathbb{R}+, \verb+\mathbb{N}+, or \verb+\mathbb{C}+
-for $\mathbb{R}$, $\mathbb{N}$ or $\mathbb{C}$.  You can also use the following
-workaround for reals, natural and complex:
-\begin{verbatim}
-   \newcommand{\RR}{I\!\!R} %real numbers
-   \newcommand{\Nat}{I\!\!N} %natural numbers
-   \newcommand{\CC}{I\!\!\!\!C} %complex numbers
-\end{verbatim}
-Note that \verb+amsfonts+ is automatically loaded by the \verb+amssymb+ package.
+This deep-learning project addresses the critical task of face mask classification using a CNN architecture. 
+By navigating challenges in dataset sampling, model convergence, and overfitting, we successfully developed a satisfactory solution capable of identifying mask-wearing individuals with an approximate accuracy of 94\%. Our exploration of methodologies, including balanced sampling and the potential integration of k-means clustering, reflects the conscientious effort to balance real-world trends with model performance. While \textit{LeNet}'s struggles underscore the significance of architectural alignment with the problem domain, our presented \gls{cnn} approach leveraged more modern deep features to achieve superior results. Overall, this project underscores the potential of deep learning in addressing real-world challenges and the ongoing pursuit of accurate and meaningful solutions.
 
-
-\end{itemize}
-
-
-If your file contains type 3 fonts or non embedded TrueType fonts, we will ask
-you to fix it.
-
-
-\subsection{Margins in \LaTeX{}}
-
-
-Most of the margin problems come from figures positioned by hand using
-\verb+\special+ or other commands. We suggest using the command
-\verb+\includegraphics+ from the \verb+graphicx+ package. Always specify the
-figure width as a multiple of the line width as in the example below:
-\begin{verbatim}
-   \usepackage[pdftex]{graphicx} ...
-   \includegraphics[width=0.8\linewidth]{myfile.pdf}
-\end{verbatim}
-See Section 4.4 in the graphics bundle documentation
-(\url{http://mirrors.ctan.org/macros/latex/required/graphics/grfguide.pdf})
-
-
-A number of width problems arise when \LaTeX{} cannot properly hyphenate a
-line. Please give LaTeX hyphenation hints using the \verb+\-+ command when
-necessary.
-
-
-\begin{ack}
-Use unnumbered first level headings for the acknowledgments. All acknowledgments
-go at the end of the paper before the list of references. Moreover, you are required to declare
-funding (financial activities supporting the submitted work) and competing interests (related financial activities outside the submitted work).
-More information about this disclosure can be found at: \url{https://neurips.cc/Conferences/2023/PaperInformation/FundingDisclosure}.
-
-
-Do {\bf not} include this section in the anonymized submission, only in the final paper. You can use the \texttt{ack} environment provided in the style file to autmoatically hide this section in the anonymized submission.
-\end{ack}
-
-
-
-\section{Supplementary Material}
-
-Authors may wish to optionally include extra information (complete proofs, additional experiments and plots) in the appendix. All such materials should be part of the supplemental material (submitted separately) and should NOT be included in the main submission.
-
-
-\section*{References}
-
-
-References follow the acknowledgments in the camera-ready paper. Use unnumbered first-level heading for
-the references. Any choice of citation style is acceptable as long as you are
-consistent. It is permissible to reduce the font size to \verb+small+ (9 point)
-when listing the references.
-Note that the Reference section does not count towards the page limit.
-\medskip
-
-
-{
-\small
-
-
-[1] Alexander, J.A.\ \& Mozer, M.C.\ (1995) Template-based algorithms for
-connectionist rule extraction. In G.\ Tesauro, D.S.\ Touretzky and T.K.\ Leen
-(eds.), {\it Advances in Neural Information Processing Systems 7},
-pp.\ 609--616. Cambridge, MA: MIT Press.
-
-
-[2] Bower, J.M.\ \& Beeman, D.\ (1995) {\it The Book of GENESIS: Exploring
-  Realistic Neural Models with the GEneral NEural SImulation System.}  New York:
-TELOS/Springer--Verlag.
-
-
-[3] Hasselmo, M.E., Schnell, E.\ \& Barkai, E.\ (1995) Dynamics of learning and
-recall at excitatory recurrent synapses and cholinergic modulation in rat
-hippocampal region CA3. {\it Journal of Neuroscience} {\bf 15}(7):5249-5262.
-}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\printbibliography
 
 
 \end{document}

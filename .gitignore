@@ -170,7 +170,15 @@ config.ini
 .direnv/
 
 *.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
 *.out
+*.toc
+*.xml
 # TODO: track before final submission
 *.pdf
 wandb
