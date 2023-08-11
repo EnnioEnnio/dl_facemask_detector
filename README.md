@@ -18,9 +18,10 @@ For this project we have used GitHub user **X-zhangyang**'s
 "Real-World-Masked-Face-Dataset". The original source can be found
 [here](https://github.com/X-zhangyang/Real-World-Masked-Face-Dataset).
 
-For the sake of convenience, we have already pre-processed the dataset and are
-mirroring it
-[here](https://drive.google.com/file/d/1ip04I_bX-PuIXnuzoEhAL_UZW1qTXu8y/view?usp=sharing).
+For the sake of convenience (in particular for demonstration purposes), we
+have already pre-processed the dataset and are mirroring it
+[here](https://drive.google.com/uc?id=1fygtRvKbVeiloRRDROnE7dQtjvnyoyIv). For
+model training, the original dataset mentioned above was used.
 
 
 ## Model
@@ -34,7 +35,7 @@ More details regarding the architecture and how it compares to other
 state of the art solutions can be found in the [project report](#report).
 
 A link to a pre-trained model can be found
-[here](https://drive.google.com/file/d/14Vk8ochj48OGOw6KAUaD4nEakPPcgIo4/view?usp=sharing).
+[here](https://drive.google.com/uc?id=1L6KSC6BS3gO3sDkzNvq7BoUlr-0lSlpM).
 
 ## Setup
 
@@ -89,7 +90,7 @@ followed the [setup](#setup) guide and then execute the following commands:
 # If you haven't already, download the model
 OUT=$(pwd)/model.pt make model
 
-MODEL=$(pwd)/model.pt python3 ./eval_model_webcam.py
+MODEL_PATH=$(pwd)/model.pt python3 ./eval_model_webcam.py
 ```
 
 The webcam feed is coded to appear grayscale when no mask is detected and
@@ -112,6 +113,9 @@ The training script can then be run with the following command:
 WANDB_MODE=disabled DATASET_PATH=$(pwd)/dataset/train python3 train_model.py
 ```
 
+**Note:** if you decide to test / train on a different dataset, ensure that the
+"unmasked" class is the positive class (label 1).
+
 ## Evaluation
 
 To run an evaluation loop on a batch of images, ensure you have taken the
@@ -128,24 +132,19 @@ following steps:
 The evaluation script can then be run with the following command:
 
 ```shell
-MODEL=$(pwd)/model.pt TESTSET_PATH=$(pwd)/dataset/test python3 eval_model.py
+MODEL_PATH=$(pwd)/model.pt TESTSET_PATH=$(pwd)/dataset/test python3 eval_model.py
 ```
 
-<!-- TODO: should we still support this? -->
-<!-- To classify a single image, you may also invoke the `single` subcommand. You -->
-<!-- will need to provide your own image. We recommend a square image in which the -->
-<!-- subject's face is relatively centered for the best performance. -->
-<!---->
-<!-- ```shell -->
-<!-- MODEL=$(pwd)/model.pt python3 eval_model.py single --in=/path/to/my/image.png -->
-<!-- ``` -->
+**Note:** if you decide to evaluate on a different dataset, ensure that the
+"unmasked" class is the positive class (label 1).
+
 ## Running on Images
 
 It is possible to classify individual images with our model. Make sure you have completed all the steps in the [setup](#setup) section, including the specification of the path to the trained model.
 
 run the following command to classify an image:
 ```shell
-MODEL=$(pwd)/model.pt python3 run_model.py --image=path/to/image
+MODEL_PATH=$(pwd)/model.pt python3 run_model.py --image=path/to/image
 ```
 ## Report
 

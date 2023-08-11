@@ -1,45 +1,56 @@
-from architecture import Model1, load_and_modify_resnet18, LeNet
-from util import log, Config
+from architecture import Model1
+from util import log, Config, get_device
 import torch
 import os
 import numpy
 from data_loader import make_evaluation_loader
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, precision_score, recall_score, accuracy_score, f1_score
+from sklearn.metrics import (
+    confusion_matrix,
+    precision_score,
+    recall_score,
+    accuracy_score,
+    f1_score,
+)
 
 
 def eval_model(model, testset_path):
+    # using device to run model on machines with & without GPU
+    device = get_device()
+    neural_net = model.to(device)
+
+    test_loader = make_evaluation_loader(testset_path)
+    # sklearn plots confusion matrices with TP oriented bottom-right, reverse
+    # class labels here in order to force "traditional" view of TP on top-left
+    classes = test_loader.dataset.classes
 
     def plot_confusion_matrix(conf_matrix, title):
-        plt.imshow(conf_matrix, interpolation='nearest', cmap=plt.cm.Blues)
+        plt.imshow(conf_matrix, interpolation="nearest", cmap=plt.cm.Blues)
         plt.title(title)
         plt.colorbar()
-        classes = test_loader.dataset.classes
         tick_marks = numpy.arange(len(classes))
         plt.xticks(tick_marks, classes, rotation=45)
         plt.yticks(tick_marks, classes)
 
-        thresh = conf_matrix.max() / 2.
+        thresh = conf_matrix.max() / 2.0
         for i in range(conf_matrix.shape[0]):
             for j in range(conf_matrix.shape[1]):
-                plt.text(j, i, format(conf_matrix[i, j], 'd'),
-                         ha="center", va="center",
-                         color="white" if conf_matrix[i, j] > thresh else "black")
+                plt.text(j,i, format(conf_matrix[i, j], "d"), 
+                         ha="center", 
+                         va="center", 
+                         color="white" if conf_matrix[i, j] > thresh else "black",)
 
         plt.tight_layout(pad=1.5)
-        plt.ylabel('True label')
-        plt.xlabel('Predicted label')
-
-    test_loader = make_evaluation_loader(testset_path)
+        plt.ylabel("True label")
+        plt.xlabel("Predicted label")
 
     # run model on test set, collect predictions and actual labels
     labels_true = []
     labels_predictions = []
-    total = len(test_loader.dataset)
     for data, label in test_loader:
         actual = label.item()
         labels_true.append(actual)
-        prediction = 1 if torch.sigmoid(model(data)).item() > 0.5 else 0
+        prediction = 1 if torch.sigmoid(neural_net(data.to(device))).item() > 0.5 else 0
         labels_predictions.append(prediction)
 
     labels_true = numpy.array(labels_true)
@@ -52,16 +63,21 @@ def eval_model(model, testset_path):
     f1 = f1_score(labels_true, labels_predictions)
 
     # create confusion matrix
-    conf_matrix = confusion_matrix(labels_true, labels_predictions)
+    conf_matrix = confusion_matrix(
+        labels_true,
+        labels_predictions,
+    )
 
     # plot confusion matrix
     plot_confusion_matrix(
-        conf_matrix, title=f'{model.__class__.__name__} Confusion Matrix')
-    plt.savefig(f'{model.__class__.__name__}_confusion_matrix.png')
+        conf_matrix, title=f"{model.__class__.__name__} Confusion Matrix"
+    )
+    plt.savefig(f"{model.__class__.__name__}_confusion_matrix.png")
 
     # print metrics
     print(
-        f"Model: {model.__class__.__name__}  - Precision: {precision}, Recall: {recall}, Accuracy: {accuracy}, F1 Score: {f1}")
+        f"Model: {model.__class__.__name__}  - Precision: {precision}, Recall: {recall}, Accuracy: {accuracy}, F1 Score: {f1}"
+    )
 
 
 if __name__ == "__main__":
@@ -70,8 +86,7 @@ if __name__ == "__main__":
 
     # load pre-trained model
     model_path = os.path.abspath(
-        os.getenv("MODEL_PATH") or config.get(
-            "Paths", "model") or "./trained.pt"
+        os.getenv("MODEL_PATH") or config.get("Paths", "model") or "./trained.pt"
     )
     log.info(f"Model path: {model_path}")
 
@@ -83,6 +98,8 @@ if __name__ == "__main__":
     )
     log.info(f"Test-set path: {testset_path}")
 
-    model.load_state_dict(torch.load(model_path))
+    model.load_state_dict(
+        torch.load(model_path, map_location=torch.device(get_device()))
+    )
     model.eval()
     eval_model(model, testset_path)

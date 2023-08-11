@@ -12,10 +12,10 @@ import zipfile
 log.basicConfig(
     level=log.INFO, format="[%(levelname)s] [%(module)s] %(message)s")
 
-# last updated: 2023-08-03 (sk)
-model_url = "https://drive.google.com/uc?id=14Vk8ochj48OGOw6KAUaD4nEakPPcgIo4"
-# last updated: 2023-08-03 (sk)
-dataset_url = "https://drive.google.com/uc?id=1ip04I_bX-PuIXnuzoEhAL_UZW1qTXu8y"
+# last updated: 2023-08-10 (sk)
+model_url = "https://drive.google.com/uc?id=1L6KSC6BS3gO3sDkzNvq7BoUlr-0lSlpM"
+# last updated: 2023-08-10 (sk)
+dataset_url = "https://drive.google.com/uc?id=1fygtRvKbVeiloRRDROnE7dQtjvnyoyIv"
 
 
 def get_device():

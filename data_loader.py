@@ -34,10 +34,8 @@ def make_training_and_validation_loaders(
         dataset_path, validation_split
     )
     if balanced:
-        training_loader = make_balanced_training_loader(
-            training_set, batch_size)
-        validation_loader = make_balanced_training_loader(
-            validation_set, batch_size)
+        training_loader = make_balanced_training_loader(training_set, batch_size)
+        validation_loader = make_balanced_training_loader(validation_set, batch_size)
     else:
         training_loader = make_training_loader(training_set, batch_size)
         validation_loader = make_training_loader(validation_set, batch_size)
@@ -88,8 +86,7 @@ def make_evaluation_loader(testset_path):
     Creates and returns a dataloader from a testset path for for use in model
     evaluation.
     """
-    testset = ImageFolder(
-        root=testset_path, transform=make_common_image_transforms())
+    testset = ImageFolder(root=testset_path, transform=make_common_image_transforms())
     log.info(f"Testset: {len(testset)} samples detected")
     log.info(f"Testset: detected classes: {testset.class_to_idx}")
     return DataLoader(testset, shuffle=True)
@@ -115,7 +112,8 @@ def make_common_image_transforms(resize_shape=(256, 256), grayscale=True):
 def process_single_image(image_path: str, resize_shape=(256, 256), grayscale=True):
     image = Image.open(image_path)
     transform = make_common_image_transforms(
-        resize_shape=resize_shape, grayscale=grayscale)
+        resize_shape=resize_shape, grayscale=grayscale
+    )
 
     # normalize and add batch dimension
     return transform(image).unsqueeze(0)
