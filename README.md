@@ -90,7 +90,7 @@ followed the [setup](#setup) guide and then execute the following commands:
 # If you haven't already, download the model
 OUT=$(pwd)/model.pt make model
 
-MODEL=$(pwd)/model.pt python3 ./eval_model_webcam.py
+MODEL_PATH=$(pwd)/model.pt python3 ./eval_model_webcam.py
 ```
 
 The webcam feed is coded to appear grayscale when no mask is detected and
@@ -132,7 +132,7 @@ following steps:
 The evaluation script can then be run with the following command:
 
 ```shell
-MODEL=$(pwd)/model.pt TESTSET_PATH=$(pwd)/dataset/test python3 eval_model.py
+MODEL_PATH=$(pwd)/model.pt TESTSET_PATH=$(pwd)/dataset/test python3 eval_model.py
 ```
 
 **Note:** if you decide to evaluate on a different dataset, ensure that the
@@ -144,7 +144,7 @@ It is possible to classify individual images with our model. Make sure you have 
 
 run the following command to classify an image:
 ```shell
-MODEL=$(pwd)/model.pt python3 run_model.py --image=path/to/image
+MODEL_PATH=$(pwd)/model.pt python3 run_model.py --image=path/to/image
 ```
 ## Report
 
