@@ -179,8 +179,6 @@ config.ini
 *.out
 *.toc
 *.xml
-# TODO: track before final submission
-*.pdf
 wandb
 *.pt
 .jupyter/
